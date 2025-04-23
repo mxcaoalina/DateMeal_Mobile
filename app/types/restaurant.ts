@@ -29,7 +29,7 @@ export interface Restaurant {
 /**
  * Restaurant recommendation source
  */
-export type RecommendationSource = 'ai' | 'bing' | 'yelp';
+export type RecommendationSource = 'ai' | 'bing';
 
 /**
  * User feedback on a restaurant recommendation

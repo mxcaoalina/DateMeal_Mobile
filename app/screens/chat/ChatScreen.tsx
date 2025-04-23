@@ -17,10 +17,11 @@ import { Ionicons } from '@expo/vector-icons';
 import theme from '../../theme';
 import { usePreferences } from '../../store/usePreferences';
 import RecommendationCard from '../../components/RecommendationCard';
-import { conversationService } from '../../services/api';
+import { conversationService, generateMockRecommendations } from '../../services/api';
 import { Message } from '../../types/conversation';
 import { Restaurant } from '../../types/restaurant';
 import PreferencesMenuButton from '../../components/PreferencesMenuButton';
+import { AxiosError } from 'axios';
 
 // Message types
 type MessageRole = 'user' | 'assistant';
@@ -206,18 +207,60 @@ export default function ChatScreen() {
         setRecommendations(response.recommendations);
         setShowRecommendations(true);
       }
-    } catch (error) {
-      // Handle error
+    } catch (error: any) {
+      // Enhanced error handling
       console.error('Error processing message:', error);
       
-      const errorMessage: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: "I'm sorry, I encountered an error trying to find recommendations. Please try again later.",
-        timestamp: Date.now() + 1
-      };
+      let errorMessage: ChatMessage;
+      
+      // Check if it's a network error
+      if (error.message && (error.message.includes('Network Error') || error.message.includes('network'))) {
+        errorMessage = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: "Sorry, I can't connect to the server right now. Please check your internet connection and try again. If the problem persists, the server might be temporarily unavailable.",
+          timestamp: Date.now() + 1
+        };
+      } else {
+        // Generic error message
+        errorMessage = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: "I'm sorry, I encountered an error trying to find recommendations. Please try again later.",
+          timestamp: Date.now() + 1
+        };
+      }
       
       setMessages(prev => [...prev, errorMessage]);
+      
+      // Show fallback recommendations from mock data if available
+      try {
+        const mockPreferences = { cuisines: cuisinePreferences || [], priceRange: budget || '$$' };
+        const historyForMock: Message[] = messages.map(msg => ({
+          id: msg.id,
+          role: msg.role,
+          content: msg.content,
+          timestamp: msg.timestamp
+        }));
+        
+        const fallbackRecommendations = generateMockRecommendations(userMessage.content, historyForMock, mockPreferences);
+        
+        if (fallbackRecommendations && fallbackRecommendations.length > 0) {
+          // Add a message explaining these are offline recommendations
+          const fallbackMessage: ChatMessage = {
+            id: (Date.now() + 2).toString(),
+            role: 'assistant',
+            content: "I've provided some offline restaurant suggestions based on your preferences:",
+            timestamp: Date.now() + 2
+          };
+          
+          setMessages(prev => [...prev, fallbackMessage]);
+          setRecommendations(fallbackRecommendations);
+          setShowRecommendations(true);
+        }
+      } catch (fallbackError) {
+        console.error('Failed to generate fallback recommendations:', fallbackError);
+      }
     } finally {
       setIsLoading(false);
     }

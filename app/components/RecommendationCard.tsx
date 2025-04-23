@@ -84,8 +84,7 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: theme.colors.card,
     borderRadius: theme.borderRadius.default,
-    marginBottom: theme.spacing.md,
-    flexDirection: 'row',
+    marginBottom: theme.spacing.lg,
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -94,8 +93,8 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   imageContainer: {
-    width: 100,
-    height: 120,
+    width: '100%',
+    height: 200,
     backgroundColor: theme.colors.gray[100],
   },
   loadingContainer: {

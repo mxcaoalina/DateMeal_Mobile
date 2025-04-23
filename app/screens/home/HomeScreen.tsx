@@ -103,21 +103,14 @@ export default function HomeScreen() {
   
   // Return to onboarding to edit preferences
   const handleEditPreferences = () => {
-    console.log('[HOME] Setting onboardingComplete to false and navigating to Step1');
-    setOnboardingComplete(false);
+    console.log('[HOME] Navigating to Preferences screen');
     
-    // Navigation is more reliable when we add a small delay
-    setTimeout(() => {
-      try {
-        navigation.reset({
-          index: 0,
-          routes: [{ name: 'Step1' }]
-        });
-      } catch (error) {
-        console.error('[HOME] Navigation error:', error);
-        navigation.navigate('Step1');
-      }
-    }, 100);
+    // Navigate to the Preferences screen instead of onboarding
+    try {
+      navigation.navigate('Preferences');
+    } catch (error) {
+      console.error('[HOME] Navigation error:', error);
+    }
   };
 
   // Debug function for direct navigation

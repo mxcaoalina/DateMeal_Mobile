@@ -73,6 +73,8 @@ DateMeal Mobile is a React Native application built with Expo that provides rest
 - Improved home screen navigation
 - Simplified UI by removing preferences display
 - Hamburger menu for accessing preferences from any screen
+- Enhanced network error handling with offline fallback recommendations
+- Fixed navigation to ensure "Edit Preferences" button takes users to the dedicated Preferences screen
 
 ### In Progress
 - Further enhancements to API integration
@@ -231,6 +233,7 @@ This approach ensures the UI remains attractive and functional even when image l
 3. **Axios**: For API requests with interceptors for error handling
 4. **Zustand**: For state management with persistence
 5. **AsyncStorage**: For persisting user data locally
+6. **Offline Fallbacks**: Graceful handling of network errors with offline recommendations
 
 ## API Endpoints
 - `/api/conversations`: Process user messages and return recommendations
@@ -258,10 +261,12 @@ This approach ensures the UI remains attractive and functional even when image l
 - Improved navigation with clear options on the home screen
 - Simplified home screen by removing preferences display section
 - Added hamburger menu in top-right corner for quick access to preferences from any screen
+- Fixed navigation paths to properly connect preferences-related UI elements
 
 ## Future Enhancements
 - Offline mode with cached recommendations
 - Push notifications for new restaurant suggestions
 - Social sharing features
 - User authentication and profile sync
-- Reviews and ratings integration 
+- Reviews and ratings integration
+- Expanded offline support with persistent caching 

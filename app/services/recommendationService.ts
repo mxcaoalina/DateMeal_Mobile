@@ -1,7 +1,7 @@
 import { Restaurant } from '../types/restaurant';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-import { Message } from '../types/message';
+import { Message } from '../types/conversation';
 import { UserPreferences } from '../types/userPreferences';
 
 const API_URL = 'https://api.openai.com/v1/chat/completions';
@@ -283,7 +283,7 @@ export class RecommendationService {
 User preferences:
 - Party size: ${preferences.partySize || 'Not specified'}
 - Cuisine preferences: ${preferences.cuisinePreferences?.join(', ') || 'Not specified'}
-- Price range: ${preferences.priceRange || 'Not specified'}
+- Price range: ${preferences.budgetRange || 'Not specified'}
 - Location: ${preferences.location || 'Not specified'}
 
 Please recommend 3-5 restaurants that would be good for a date based on these preferences. For each restaurant, provide:
@@ -353,7 +353,7 @@ Provide 3-5 restaurants in the same JSON format as before:
    */
   private generateMockRecommendations(preferences: UserPreferences): Restaurant[] {
     const cuisines = preferences.cuisinePreferences || ['Italian', 'Japanese', 'American'];
-    const priceRange = preferences.priceRange || '$$';
+    const priceRange = preferences.budgetRange || '$$';
     const location = preferences.location || 'Downtown';
     
     return [
