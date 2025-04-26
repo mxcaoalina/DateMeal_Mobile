@@ -60,17 +60,39 @@ export default function OnboardingScreen() {
     }, 300);
   };
 
-  const handleLocationSelection = (location: string) => {
+  const handleLocationSelection = async (location: string) => {
     setSelectedOption(location);
-    setTimeout(() => {
-      setIsLoading(true);
+    setIsLoading(true);
+    
+    try {
       setLocation(location, 0, 0);
       setOnboardingComplete(true);
 
-      setTimeout(() => {
+      const preferences = {
+        partySize: sessionPreferences.partySize,
+        mood: sessionPreferences.mood,
+        ambience: sessionPreferences.ambience,
+        budget: sessionPreferences.budget,
+        cuisines: sessionPreferences.cuisinePreferences,
+        location: location
+      };
+
+      const result = await restaurantApiService.getRecommendations(preferences);
+      
+      if (result?.recommendations?.length > 0) {
+        navigation.navigate('Chat', { 
+          initialRecommendations: result.recommendations,
+          initialResponse: result.reasoning
+        });
+      } else {
         navigation.navigate('Chat');
-      }, 1500);
-    }, 300);
+      }
+    } catch (error) {
+      console.error('Error getting recommendations:', error);
+      navigation.navigate('Chat');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const renderContent = () => {

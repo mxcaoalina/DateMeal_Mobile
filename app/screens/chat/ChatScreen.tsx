@@ -56,9 +56,11 @@ const MessageBubble = ({ message }: { message: ChatMessage }) => {
   );
 };
 
-export default function ChatScreen() {
+export default function ChatScreen({ route }) {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const preferences = usePreferences();
+  const initialRecommendations = route.params?.initialRecommendations;
+  const initialResponse = route.params?.initialResponse;
   const {
     userName,
     sessionPreferences: {
@@ -85,14 +87,30 @@ export default function ChatScreen() {
   };
 
   useEffect(() => {
-    const welcome: ChatMessage = {
-      id: Date.now().toString(),
-      role: 'assistant',
-      content: createWelcomeMessage(),
-      timestamp: Date.now()
-    };
-    setMessages([welcome]);
-  }, []);
+    const messages = [];
+    
+    if (initialResponse) {
+      messages.push({
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: initialResponse,
+        timestamp: Date.now()
+      });
+    } else {
+      messages.push({
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: createWelcomeMessage(),
+        timestamp: Date.now()
+      });
+    }
+    
+    setMessages(messages);
+    
+    if (initialRecommendations?.length > 0) {
+      setRecommendations(initialRecommendations);
+    }
+  }, [initialResponse, initialRecommendations]);
 
   useEffect(() => {
     setTimeout(() => {
