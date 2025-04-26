@@ -1,11 +1,10 @@
 import axios from 'axios';
 import { Restaurant } from '../types/restaurant';
 import { Message } from '../types/conversation';
+import { getApiBaseUrl } from '../utils/networkUtils';
 
 // API configuration
-const API_URL = __DEV__
-  ? 'http://localhost:3000/api'
-  : 'https://your-production-api.com/api';
+const API_URL = getApiBaseUrl();
 
 const restaurantApi = axios.create({
   baseURL: API_URL,
@@ -44,25 +43,28 @@ export const restaurantApiService = {
     preferences: PreferenceData,
     conversationHistory: Message[] = []
   ): Promise<RecommendationResponse> => {
-    const formattedPreferences = Object.entries(preferences)
-      .filter(([_, value]) => value !== undefined && value !== null)
-      .map(([key, value]) => {
-        if (Array.isArray(value)) {
-          return `${key}: ${value.join(', ')}`;
-        } else if (typeof value === 'object' && value !== null) {
-          return `${key}: ${JSON.stringify(value)}`;
-        }
-        return `${key}: ${value}`;
-      });
+    // Format preferences to match the FastAPI endpoint
+    const requestData = {
+      vibe: preferences.mood || preferences.ambience,
+      partySize: preferences.partySize?.toString(),
+      budget: preferences.priceRange,
+      cuisines: preferences.cuisines,
+      location: typeof preferences.location === 'string'
+        ? preferences.location
+        : preferences.location?.city
+    };
 
-    const formattedHistory = conversationHistory
-      .map(msg => `${msg.role.toUpperCase()}: ${msg.content}`)
-      .join('\n');
-
-    const response = await restaurantApi.post('/restaurant/recommendations', {
-      preferences: formattedPreferences,
-      conversationHistory: formattedHistory,
-    });
+    console.log('🔍 Sending request to FastAPI with data:', JSON.stringify(requestData));
+    
+    // Use the advise endpoint directly
+    const response = await restaurantApi.post('/advise', requestData);
+    
+    if (response.data && response.data.restaurant) {
+      return {
+        recommendations: [response.data.restaurant],
+        reasoning: response.data.response
+      };
+    }
 
     return response.data;
   },
@@ -78,13 +80,23 @@ export const restaurantApiService = {
     response: string;
     updatedRecommendations?: Restaurant[];
   }> => {
-    const response = await restaurantApi.post('/conversation', {
-      message,
-      history,
-      preferences,
-    });
-
-    return response.data;
+    // Format preferences to match the FastAPI endpoint
+    const requestData = {
+      vibe: preferences.mood || preferences.ambience,
+      partySize: preferences.partySize?.toString(),
+      budget: preferences.priceRange,
+      cuisines: preferences.cuisines,
+      location: typeof preferences.location === 'string'
+        ? preferences.location
+        : preferences.location?.city
+    };
+    
+    const response = await restaurantApi.post('/advise', requestData);
+    
+    return {
+      response: response.data.response,
+      updatedRecommendations: response.data.restaurant ? [response.data.restaurant] : undefined
+    };
   },
 
   /**
@@ -98,13 +110,23 @@ export const restaurantApiService = {
     response: string;
     updatedRecommendations?: Restaurant[];
   }> => {
-    const response = await restaurantApi.post('/restaurant/conversation', {
-      message,
-      history,
-      preferences,
-    });
-  
-    return response.data;
+    // Format preferences to match the FastAPI endpoint
+    const requestData = {
+      vibe: preferences.mood || preferences.ambience,
+      partySize: preferences.partySize?.toString(),
+      budget: preferences.priceRange,
+      cuisines: preferences.cuisines,
+      location: typeof preferences.location === 'string'
+        ? preferences.location
+        : preferences.location?.city
+    };
+    
+    const response = await restaurantApi.post('/advise', requestData);
+    
+    return {
+      response: response.data.response,
+      updatedRecommendations: response.data.restaurant ? [response.data.restaurant] : undefined
+    };
   },
   
 

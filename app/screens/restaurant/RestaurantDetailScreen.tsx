@@ -19,6 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 import theme from '../../theme';
 import { conversationService } from '../../services/api';
 import { Restaurant } from '../../types/restaurant';
+import { useConversation } from '../../store/useConversation';
 import PreferencesMenuButton from '../../components/PreferencesMenuButton';
 import Button from '../../components/Button';
 
@@ -31,6 +32,7 @@ export default function RestaurantDetailScreen() {
   const [error, setError] = useState<string | null>(null);
   const [isSaved, setIsSaved] = useState(false);
 
+  const { savedRestaurants, saveRestaurant, removeRestaurant } = useConversation();
   const scrollY = useRef(new Animated.Value(0)).current;
   const { id } = route.params as { id: string };
 
@@ -40,6 +42,10 @@ export default function RestaurantDetailScreen() {
         setLoading(true);
         const data = await conversationService.getRestaurantDetails(id);
         setRestaurant(data);
+        
+        // Check if this restaurant is already saved
+        const isAlreadySaved = savedRestaurants.some(r => r.id === id);
+        setIsSaved(isAlreadySaved);
       } catch (err) {
         console.error('Error fetching restaurant details:', err);
         setError('Failed to load restaurant details. Please try again later.');
@@ -49,19 +55,41 @@ export default function RestaurantDetailScreen() {
     };
 
     fetchRestaurantDetails();
-  }, [id]);
+  }, [id, savedRestaurants]);
 
   const handleBack = () => navigation.goBack();
   const handleCall = () => restaurant?.phone ? Linking.openURL(`tel:${restaurant.phone}`) : Alert.alert('No Phone Number');
   const handleWebsite = () => restaurant?.website ? Linking.openURL(restaurant.website) : Alert.alert('No Website');
   const handleDirections = () => restaurant?.address ? Linking.openURL(`http://maps.apple.com/?q=${encodeURIComponent(restaurant.address)}`) : Alert.alert('No Address');
+  
   const handleSave = () => {
-    setIsSaved(!isSaved);
-    Alert.alert(
-      isSaved ? "Restaurant Removed" : "Restaurant Saved",
-      isSaved ? "Restaurant removed from your saved list." : "Restaurant saved to your list!",
-      [{ text: "OK" }]
-    );
+    if (!restaurant) return;
+    
+    if (isSaved) {
+      removeRestaurant(id);
+      setIsSaved(false);
+      Alert.alert(
+        "Restaurant Removed",
+        "Restaurant removed from your saved list.",
+        [{ text: "OK" }]
+      );
+    } else {
+      // Convert the restaurant to the expected format in useConversation
+      const convertedRestaurant = {
+        ...restaurant,
+        // Handle the conversion from string[] to string for openingHours, if needed
+        openingHours: Array.isArray(restaurant.openingHours) 
+          ? restaurant.openingHours.join(', ') 
+          : restaurant.openingHours
+      };
+      saveRestaurant(convertedRestaurant as any);
+      setIsSaved(true);
+      Alert.alert(
+        "Restaurant Saved",
+        "Restaurant saved to your list!",
+        [{ text: "OK" }]
+      );
+    }
   };
 
   if (loading) {
@@ -189,7 +217,13 @@ export default function RestaurantDetailScreen() {
         </View>
 
         <View style={styles.bottomButtons}>
-          <Button title="Save" variant="primary" onPress={handleSave} style={styles.saveButton} />
+          <Button 
+            title={isSaved ? "Remove" : "Save"} 
+            variant={isSaved ? "secondary" : "primary"} 
+            onPress={handleSave} 
+            style={styles.saveButton} 
+            icon={isSaved ? "bookmark" : "bookmark-outline"}
+          />
         </View>
       </View>
     </SafeAreaView>

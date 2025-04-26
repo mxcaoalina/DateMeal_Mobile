@@ -50,7 +50,7 @@ DateMeal follows a client-server architecture:
 │  React Native   │  HTTP Requests   │  FastAPI Server  │
 │  Mobile App     │ ────────────────▶│                  │
 │  (Expo)         │ ◀────────────────│                  │
-│                 │     Responses     │                  │
+│                 │     Responses    │                  │
 └─────────────────┘                  └──────────────────┘
 ```
 
@@ -122,7 +122,8 @@ App
     │   │   ├── Step 2: Mood/Vibe
     │   │   ├── Step 3: Ambience
     │   │   ├── Step 4: Budget
-    │   │   └── Step 5: Cuisine
+    │   │   ├── Step 5: Cuisine
+    |   |   └── Step 6: Location
     │   └── LocationScreen
     │
     └── MainStack
@@ -414,6 +415,246 @@ if (storedRestaurants) {
 - Improved the logging system for better debugging
 - Created structured restaurant data from API responses
 
+## Critical Backend Enhancement: Missing Preference Parameters
+
+⚠️ **IMPORTANT**: There is currently a critical gap between the preferences collected during onboarding and what's being sent to the backend API for generating recommendations.
+
+### Current Limitation
+
+Several important user preferences collected during onboarding are **not being passed** to the backend:
+
+1. **Ambience** - Currently, only "mood" is passed as "vibe" and ambience is only used as a fallback if mood is not present
+2. **Dietary Restrictions/Allergies** - Completely ignored in API requests
+3. **Absolute No-gos** - Completely ignored in API requests
+
+This means that even though users specify these preferences during onboarding, the recommendations they receive do not take these important factors into account.
+
+### Required Changes
+
+The following changes need to be made to ensure all user preferences are properly considered:
+
+1. **Update the backend AdviseRequest model**:
+   ```python
+   class AdviseRequest(BaseModel):
+       vibe: Optional[str] = Field(default="romantic")
+       ambience: Optional[str] = None
+       partySize: Optional[str] = Field(default="2")
+       budget: Optional[str] = Field(default="$$")
+       cuisines: Optional[List[str]] = Field(default_factory=list)
+       location: Optional[str] = Field(default="NYC")
+       dietaryRestrictions: Optional[List[str]] = Field(default_factory=list)
+       absoluteNogos: Optional[List[str]] = Field(default_factory=list)
+   ```
+
+2. **Modify the OpenAI prompt** in `generate_azure_openai_recommendation`:
+   ```python
+   user_prompt = f"""
+   Based on the following preferences:
+   - Vibe/Mood: {vibe}
+   - Ambience: {preferences.get("ambience") or "Any"}
+   - Location: {location}
+   - Cuisine: {cuisine}
+   - Budget: {budget}
+   - Party Size: {preferences.get("partySize") or "2"}
+   - Dietary Restrictions: {', '.join(preferences.get("dietaryRestrictions", [])) or "None"}
+   - Absolute No-gos: {', '.join(preferences.get("absoluteNogos", [])) or "None"}
+
+   Generate 3 restaurant options that would be perfect matches.
+   Each restaurant should be a real, well-known establishment in {location} that matches the preferences.
+   
+   If dietary restrictions are specified, ensure the restaurants can accommodate these needs.
+   If there are absolute no-gos listed, make sure to exclude restaurants that feature these items prominently.
+   
+   For each restaurant, provide:
+   1. The restaurant name
+   2. Cuisine type
+   3. Price range ($ to $$$$)
+   4. Location (neighborhood)
+   5. A brief description (1-2 sentences)
+   6. 2-3 key highlights that make it special
+   7. A rating between 4.0 and 5.0
+   """
+   ```
+
+3. **Update the fastApiAdapter** to pass all preferences:
+   ```typescript
+   const requestData: AdviseRequest = {
+     vibe: preferences.mood,
+     ambience: preferences.ambience,
+     partySize: preferences.partySize?.toString(),
+     budget: preferences.priceRange,
+     cuisines: preferences.cuisines,
+     location: typeof preferences.location === 'string'
+       ? preferences.location
+       : preferences.location?.city,
+     dietaryRestrictions: preferences.dietaryRestrictions,
+     absoluteNogos: preferences.absoluteNogos
+   };
+   ```
+
+4. **Update the AdviseRequest interface** in the frontend:
+   ```typescript
+   export interface AdviseRequest {
+     vibe?: string;
+     ambience?: string;
+     partySize?: string;
+     budget?: string;
+     cuisines?: string[];
+     location?: string;
+     dietaryRestrictions?: string[];
+     absoluteNogos?: string[];
+   }
+   ```
+
+### Expected Benefits
+
+Implementing these changes will:
+- Provide more personalized restaurant recommendations
+- Ensure dietary restrictions and allergies are properly considered
+- Help users avoid restaurants with their absolute no-gos
+- Differentiate between mood/vibe and ambience for better matching
+- Result in higher user satisfaction with recommendations
+
+### Implementation Plan
+
+To implement this enhancement, follow these steps:
+
+#### Step 1: Backend Updates
+
+1. Edit `backend-python/main.py` to update the `AdviseRequest` class:
+   ```python
+   class AdviseRequest(BaseModel):
+       vibe: Optional[str] = Field(default="romantic")
+       ambience: Optional[str] = None
+       partySize: Optional[str] = Field(default="2")
+       budget: Optional[str] = Field(default="$$")
+       cuisines: Optional[List[str]] = Field(default_factory=list)
+       location: Optional[str] = Field(default="NYC")
+       dietaryRestrictions: Optional[List[str]] = Field(default_factory=list)
+       absoluteNogos: Optional[List[str]] = Field(default_factory=list)
+   ```
+
+2. Modify the `generate_azure_openai_recommendation` function to update the prompt:
+   ```python
+   user_prompt = f"""
+   Based on the following preferences:
+   - Vibe/Mood: {vibe}
+   - Ambience: {preferences.get("ambience") or "Any"}
+   - Location: {location}
+   - Cuisine: {cuisine}
+   - Budget: {budget}
+   - Party Size: {preferences.get("partySize") or "2"}
+   - Dietary Restrictions: {', '.join(preferences.get("dietaryRestrictions", [])) or "None"}
+   - Absolute No-gos: {', '.join(preferences.get("absoluteNogos", [])) or "None"}
+
+   Generate 3 restaurant options that would be perfect matches.
+   Each restaurant should be a real, well-known establishment in {location} that matches the preferences.
+   
+   If dietary restrictions are specified, ensure the restaurants can accommodate these needs.
+   If there are absolute no-gos listed, make sure to exclude restaurants that feature these items prominently.
+   
+   For each restaurant, provide:
+   1. The restaurant name
+   2. Cuisine type
+   3. Price range ($ to $$$$)
+   4. Location (neighborhood)
+   5. A brief description (1-2 sentences)
+   6. 2-3 key highlights that make it special
+   7. A rating between 4.0 and 5.0
+   """
+   ```
+
+3. Update the `get_recommendation` function to use these new fields:
+   ```python
+   ambience = request.ambience
+   dietary_restrictions = request.dietaryRestrictions or []
+   absolute_nogos = request.absoluteNogos or []
+   
+   # Add these to the recommendations object
+   restaurants = await generate_azure_openai_recommendation({
+       "vibe": vibe,
+       "ambience": ambience,
+       "location": location,
+       "cuisines": request.cuisines,
+       "budget": budget,
+       "partySize": request.partySize,
+       "dietaryRestrictions": dietary_restrictions,
+       "absoluteNogos": absolute_nogos
+   })
+   ```
+
+#### Step 2: Frontend Updates
+
+1. Update the `AdviseRequest` interface in `app/services/api.ts`:
+   ```typescript
+   export interface AdviseRequest {
+     vibe?: string;
+     ambience?: string;
+     partySize?: string;
+     budget?: string;
+     cuisines?: string[];
+     location?: string;
+     dietaryRestrictions?: string[];
+     absoluteNogos?: string[];
+   }
+   ```
+
+2. Modify the `fastApiAdapter.ts` file to pass all preferences:
+   ```typescript
+   const requestData: AdviseRequest = {
+     vibe: preferences.mood,
+     ambience: preferences.ambience,
+     partySize: preferences.partySize?.toString(),
+     budget: preferences.priceRange,
+     cuisines: preferences.cuisines,
+     location: typeof preferences.location === 'string'
+       ? preferences.location
+       : preferences.location?.city,
+     dietaryRestrictions: preferences.dietaryRestrictions,
+     absoluteNogos: preferences.absoluteNogos
+   };
+   ```
+
+3. Check that `ChatScreen.tsx` is correctly preparing all preferences:
+   ```typescript
+   const rawPreferences = {
+     partySize,
+     moodOrVibe: mood,
+     venueType: ambience,
+     budgetRange: budget,
+     cuisines: cuisinePreferences,
+     dietaryRestrictions, // Make sure these are passed to the adapter
+     absoluteNogos,       // Make sure these are passed to the adapter
+     location: location?.city
+   };
+   ```
+
+#### Step 3: Testing
+
+1. Start the backend server:
+   ```bash
+   cd backend-python
+   python -m uvicorn main:app --host 0.0.0.0 --port 8001 --reload
+   ```
+
+2. Use Postman or curl to test if the updated endpoint accepts the new fields:
+   ```bash
+   curl -X POST "http://localhost:8001/advise" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "vibe": "romantic",
+       "ambience": "quiet",
+       "partySize": "2",
+       "budget": "$$$",
+       "cuisines": ["Italian", "French"],
+       "location": "NYC",
+       "dietaryRestrictions": ["Gluten-free", "Vegetarian"],
+       "absoluteNogos": ["Seafood", "Spicy"]
+     }'
+   ```
+
+3. Start the app and test the recommendation flow with different combinations of preferences.
+
 ## Project Structure
 
 ### Frontend (React Native)
@@ -462,7 +703,7 @@ backend-python/
 
 - The FastAPI backend exposes two endpoints:
   - `GET /health` - Health check endpoint
-  - `POST /advise` - Endpoint for getting restaurant recommendations
+  - `POST /advise`: Endpoint for getting restaurant recommendations
 
 - Request format for `/advise`:
   ```json
@@ -497,17 +738,23 @@ python3 -m uvicorn main:app --host 0.0.0.0 --port 8001 --reload
 
 ### Backend Enhancement
 
-1. **Implement Real Restaurant Data**
+1. **Fix the Missing Preference Parameters Issue** ⚠️ **HIGH PRIORITY**
+   - Update the AdviseRequest model to include ambience, dietary restrictions, and no-gos
+   - Modify the OpenAI prompt to use all available preference parameters
+   - Update the frontend-backend integration to pass all collected preferences
+   - See the "Critical Backend Enhancement" section for details
+
+2. **Implement Real Restaurant Data**
    - Replace the current placeholder response with actual restaurant data
    - Add a database or data store for restaurant information
    - Return structured restaurant objects instead of just text
 
-2. **Enhance Recommendation Logic**
+3. **Enhance Recommendation Logic**
    - Implement more sophisticated recommendation algorithms
    - Consider user preferences more comprehensively
    - Add filtering options for dietary restrictions and other criteria
 
-3. **Add Authentication**
+4. **Add Authentication**
    - Implement user accounts
    - Add authentication endpoints
    - Secure API endpoints

@@ -9,6 +9,7 @@ import { usePreferences } from '../../store/usePreferences';
 import theme from '../../theme';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../navigation/AppNavigator';
+import { restaurantApiService } from '../../services/restaurantApiService';
 
 type OnboardingNavigationProp = StackNavigationProp<RootStackParamList, 'Onboarding'>;
 
@@ -68,7 +69,8 @@ export default function OnboardingScreen() {
       setLocation(location, 0, 0);
       setOnboardingComplete(true);
 
-      const preferences = {
+      const { sessionPreferences } = preferences;
+      const apiPreferences = {
         partySize: sessionPreferences.partySize,
         mood: sessionPreferences.mood,
         ambience: sessionPreferences.ambience,
@@ -77,7 +79,7 @@ export default function OnboardingScreen() {
         location: location
       };
 
-      const result = await restaurantApiService.getRecommendations(preferences);
+      const result = await restaurantApiService.getRecommendations(apiPreferences);
       
       if (result?.recommendations?.length > 0) {
         navigation.navigate('Chat', { 

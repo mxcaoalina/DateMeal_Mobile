@@ -20,71 +20,39 @@ import Button from '../../components/Button';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../navigation/AppNavigator';
 import PreferencesMenuButton from '../../components/PreferencesMenuButton';
-import { generateMockRecommendations } from '../../services/api';
+import { useConversation, Restaurant } from '../../store/useConversation';
 
-// Define type for restaurant data
-interface SavedRestaurant {
-  id: string;
-  name: string;
-  cuisine: string;
-  priceRange: string;
-  image: string;
-}
-
-// Define props for RestaurantCard component
+// Define type for restaurant card props
 interface RestaurantCardProps {
-  item: SavedRestaurant;
+  item: Restaurant;
   onPress: () => void;
 }
 
-// Mock saved restaurants for demo
-const SAVED_RESTAURANTS: SavedRestaurant[] = [
-  {
-    id: 'restaurant-1',
-    name: 'La Trattoria',
-    cuisine: 'Italian',
-    priceRange: '$$',
-    image: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8Mnx8cmVzdGF1cmFudHxlbnwwfHwwfHw%3D&w=1000&q=80'
-  },
-  {
-    id: 'restaurant-2',
-    name: 'Sushi Zen',
-    cuisine: 'Japanese',
-    priceRange: '$$$',
-    image: 'https://images.unsplash.com/photo-1602273660127-a0000560a4c1?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8MTF8fHN1c2hpJTIwcmVzdGF1cmFudHxlbnwwfHwwfHw%3D&w=1000&q=80'
-  },
-  {
-    id: 'restaurant-3',
-    name: 'El Camino',
-    cuisine: 'Mexican',
-    priceRange: '$$',
-    image: 'https://images.unsplash.com/photo-1552566626-52f8b828add9?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8OHx8bWV4aWNhbiUyMHJlc3RhdXJhbnR8ZW58MHx8MHx8&w=1000&q=80'
-  },
-  {
-    id: 'restaurant-4',
-    name: 'Bistro Moderne',
-    cuisine: 'French',
-    priceRange: '$$$$',
-    image: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8M3x8ZnJlbmNoJTIwcmVzdGF1cmFudHxlbnwwfHwwfHw%3D&w=1000&q=80'
-  }
-];
-
 // Restaurant Card Component
 const RestaurantCard = ({ item, onPress }: RestaurantCardProps) => {
+  const [imageError, setImageError] = useState(false);
+
   return (
     <TouchableOpacity 
       style={styles.restaurantCard}
       onPress={onPress}
       activeOpacity={0.8}
     >
-      <Image 
-        source={{ uri: item.image }} 
-        style={styles.restaurantImage}
-        resizeMode="cover"
-      />
+      {!imageError && item.imageUrl ? (
+        <Image 
+          source={{ uri: item.imageUrl }} 
+          style={styles.restaurantImage}
+          resizeMode="cover"
+          onError={() => setImageError(true)}
+        />
+      ) : (
+        <View style={styles.placeholderImage}>
+          <Text style={styles.placeholderText}>{item.name[0]}</Text>
+        </View>
+      )}
       <Text style={styles.restaurantName}>{item.name}</Text>
       <View style={styles.restaurantInfo}>
-        <Text style={styles.cuisineText}>{item.cuisine}</Text>
+        <Text style={styles.cuisineText}>{item.cuisineType}</Text>
         <Text style={styles.dotSeparator}>•</Text>
         <Text style={styles.priceText}>{item.priceRange}</Text>
       </View>
@@ -96,6 +64,7 @@ export default function HomeScreen() {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const preferences = usePreferences();
   const { userName, onboardingComplete, setOnboardingComplete, resetSessionPreferences, debugState } = preferences;
+  const { savedRestaurants } = useConversation();
   
   const [timeOfDay, setTimeOfDay] = useState('');
   const [greeting, setGreeting] = useState('');
@@ -193,21 +162,8 @@ export default function HomeScreen() {
 
   // See all saved restaurants
   const handleSeeAllPress = () => {
-    // Navigate to a saved restaurants screen (not yet implemented)
-    alert('See All Saved Restaurants coming soon!');
-  };
-
-  // Demo restaurant detail
-  const handleViewDemoRestaurant = () => {
-    // Generate a mock restaurant ID and navigate to the detail page
-    const mockRestaurants = generateMockRecommendations('', [], {
-      partySize: 2,
-      cuisines: ['Italian'],
-      priceRange: '$$$'
-    });
-    if (mockRestaurants && mockRestaurants.length > 0) {
-      navigation.navigate('RestaurantDetail', { id: mockRestaurants[0].id });
-    }
+    // Navigate to the SavedRestaurantsScreen
+    navigation.navigate('SavedRestaurants');
   };
 
   return (
@@ -246,20 +202,27 @@ export default function HomeScreen() {
               </TouchableOpacity>
             </View>
             
-            {/* Horizontal ScrollView for Restaurant Cards */}
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.restaurantsScrollContainer}
-            >
-              {SAVED_RESTAURANTS.map((restaurant) => (
-                <RestaurantCard
-                  key={restaurant.id}
-                  item={restaurant}
-                  onPress={() => handleRestaurantPress(restaurant.id)}
-                />
-              ))}
-            </ScrollView>
+            {savedRestaurants.length > 0 ? (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.restaurantCardsContainer}
+              >
+                {savedRestaurants.slice(0, 4).map((restaurant) => (
+                  <RestaurantCard
+                    key={restaurant.id}
+                    item={restaurant}
+                    onPress={() => handleRestaurantPress(restaurant.id)}
+                  />
+                ))}
+              </ScrollView>
+            ) : (
+              <View style={styles.noRestaurantsContainer}>
+                <Text style={styles.noRestaurantsText}>
+                  You haven't saved any restaurants yet. Find and save restaurants to see them here!
+                </Text>
+              </View>
+            )}
           </View>
           
           {/* What would you like to do section */}
@@ -294,22 +257,6 @@ export default function HomeScreen() {
               <View style={styles.actionTextContainer}>
                 <Text style={styles.actionTitle}>Edit Preferences</Text>
                 <Text style={styles.actionDescription}>Fine-tune your tastes and must-avoids.</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={theme.colors.gray[400]} />
-            </TouchableOpacity>
-            
-            {/* View Restaurant Demo (for debugging) */}
-            <TouchableOpacity 
-              style={styles.actionCard}
-              onPress={handleViewDemoRestaurant}
-              activeOpacity={0.7}
-            >
-              <View style={styles.actionIconContainer}>
-                <Ionicons name="restaurant-outline" size={28} color="#333" />
-              </View>
-              <View style={styles.actionTextContainer}>
-                <Text style={styles.actionTitle}>View Restaurant Demo</Text>
-                <Text style={styles.actionDescription}>See a sample restaurant detail page</Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color={theme.colors.gray[400]} />
             </TouchableOpacity>
@@ -385,7 +332,7 @@ const styles = StyleSheet.create({
     color: theme.colors.primary,
     marginRight: 4,
   },
-  restaurantsScrollContainer: {
+  restaurantCardsContainer: {
     paddingVertical: theme.spacing.md,
     paddingRight: theme.spacing.lg,
   },
@@ -465,5 +412,30 @@ const styles = StyleSheet.create({
   actionDescription: {
     fontSize: theme.fontSizes.sm,
     color: theme.colors.textSecondary,
+  },
+  noRestaurantsContainer: {
+    padding: theme.spacing.lg,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  noRestaurantsText: {
+    fontSize: theme.fontSizes.md,
+    fontWeight: '500',
+    color: theme.colors.textSecondary,
+    textAlign: 'center',
+  },
+  placeholderImage: {
+    width: '100%',
+    height: 130,
+    backgroundColor: theme.colors.primaryLight,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderTopLeftRadius: theme.borderRadius.default,
+    borderTopRightRadius: theme.borderRadius.default,
+  },
+  placeholderText: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: theme.colors.primary,
   },
 }); 

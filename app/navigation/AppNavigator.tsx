@@ -7,6 +7,7 @@ import OnboardingScreen from '../screens/onboarding/onboardingScreen';
 import HomeScreen from '../screens/home/HomeScreen';
 import ChatScreen from '../screens/chat/ChatScreen';
 import RestaurantDetailScreen from '../screens/restaurant/RestaurantDetailScreen';
+import SavedRestaurantsScreen from '../screens/restaurant/SavedRestaurantsScreen';
 import PreferencesScreen from '../screens/preferences/PreferencesScreen';
 
 // Define the types for our navigation parameters
@@ -16,6 +17,7 @@ export type RootStackParamList = {
   Home: undefined;
   Chat: undefined;
   RestaurantDetail: { id: string };
+  SavedRestaurants: undefined;
   Preferences: undefined;
 };
 
@@ -56,6 +58,7 @@ export default function AppNavigator() {
         <Stack.Screen name="Home" component={HomeScreen} />
         <Stack.Screen name="Chat" component={ChatScreen} />
         <Stack.Screen name="RestaurantDetail" component={RestaurantDetailScreen} />
+        <Stack.Screen name="SavedRestaurants" component={SavedRestaurantsScreen} />
         <Stack.Screen name="Preferences" component={PreferencesScreen} />
       </Stack.Navigator>
     </NavigationContainer>
