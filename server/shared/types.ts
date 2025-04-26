@@ -47,14 +47,21 @@ export interface ChatMessage {
  * User preferences type
  */
 export interface UserPreferences {
-  name?: string;
-  partySize?: number | string;
-  occasion?: string;
+  partySize?: string;
+  moodOrVibe?: string;
   venueType?: string;
   budgetRange?: string;
-  cuisinePreferences?: string[];
+  cuisines?: string[];
   dietaryRestrictions?: string[];
-  location?: string;
-  moodOrVibe?: string;
   absoluteNogos?: string[];
-} 
+  location?: string;
+}
+
+/**
+ * Request format when the mobile app sends a new message
+ */
+export interface ConversationRequest {
+  message: string;                // The latest user message
+  history: ChatMessage[];          // Previous conversation history
+  preferences: UserPreferences;    // Full structured preferences
+}

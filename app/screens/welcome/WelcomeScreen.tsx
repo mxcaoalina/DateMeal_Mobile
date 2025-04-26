@@ -20,7 +20,7 @@ export default function WelcomeScreen() {
     setUserName(name.trim());
     // Navigate to onboarding
     // @ts-ignore - We know this route exists
-    navigation.navigate('Step1');
+    navigation.navigate('Onboarding');
   };
 
   return (

@@ -14,7 +14,7 @@ import theme from '../theme';
 
 interface ButtonProps extends PressableProps {
   title: string;
-  variant?: 'primary' | 'secondary' | 'outline' | 'ghost';
+  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'onboarding';
   size?: 'small' | 'medium' | 'large';
   fullWidth?: boolean;
   loading?: boolean;
@@ -36,15 +36,15 @@ export default function Button({
   textStyle,
   ...props
 }: ButtonProps) {
-  // Animation for press feedback
+  // Animation for press feedback - more subtle for matching onboarding style
   const animatedScale = React.useRef(new Animated.Value(1)).current;
   
   const handlePressIn = () => {
     Animated.spring(animatedScale, {
-      toValue: 0.95,
+      toValue: 0.98, // More subtle scale effect
       useNativeDriver: true,
-      speed: 40,
-      bounciness: 4
+      speed: 30,  // Slightly slower
+      bounciness: 2 // Less bouncy
     }).start();
   };
   
@@ -52,8 +52,8 @@ export default function Button({
     Animated.spring(animatedScale, {
       toValue: 1,
       useNativeDriver: true,
-      speed: 30,
-      bounciness: 2
+      speed: 20, // Slightly slower return
+      bounciness: 1 // Minimal bounce
     }).start();
   };
   
@@ -62,6 +62,7 @@ export default function Button({
     const baseStyle = [
       styles.button,
       styles[`${size}Button`],
+      !fullWidth && styles.defaultWidth,
       fullWidth && styles.fullWidth,
       props.disabled && styles.disabled,
       style
@@ -72,8 +73,8 @@ export default function Button({
       return (
         <LinearGradient
           colors={variant === 'primary' 
-            ? ['#4b0082', '#380061'] as readonly string[] 
-            : ['#FFA500', '#FF8C00'] as readonly string[]
+            ? ['#333333', '#1a1a1a']
+            : ['#757575', '#606060']
           }
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
@@ -84,13 +85,14 @@ export default function Button({
       );
     }
     
-    // Return regular container for outline and ghost variants
+    // Return regular container for outline, ghost, and onboarding variants
     return (
       <Pressable
         style={[
           ...baseStyle,
           variant === 'outline' && styles.outlineButton,
           variant === 'ghost' && styles.ghostButton,
+          variant === 'onboarding' && styles.onboardingButton,
         ]}
         {...props}
       >
@@ -105,7 +107,7 @@ export default function Button({
       {loading ? (
         <ActivityIndicator 
           size="small" 
-          color={variant === 'outline' || variant === 'ghost' ? theme.colors.primary : 'white'} 
+          color={variant === 'outline' || variant === 'ghost' || variant === 'onboarding' ? theme.colors.primary : 'white'} 
         />
       ) : (
         <>
@@ -116,6 +118,7 @@ export default function Button({
               styles[`${size}Text`],
               variant === 'outline' && styles.outlineText,
               variant === 'ghost' && styles.ghostText,
+              variant === 'onboarding' && styles.onboardingText,
               textStyle
             ]}
           >
@@ -147,7 +150,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: theme.borderRadius.default,
-    ...theme.shadows.medium,
+    ...theme.shadows.small,
   },
   smallButton: {
     paddingVertical: theme.spacing.xs,
@@ -164,6 +167,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.xl,
     minHeight: 56,
   },
+  defaultWidth: {
+    alignSelf: 'flex-start',
+    width: '100%',
+  },
   fullWidth: {
     width: '100%',
   },
@@ -179,6 +186,22 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     borderWidth: 0,
     ...theme.shadows.small,
+  },
+  onboardingButton: {
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    borderColor: 'transparent',
+    shadowColor: 'transparent',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
+    paddingLeft: 0,
+    paddingRight: theme.spacing.xs,
+    height: 40,
+    justifyContent: 'flex-start',
+    alignItems: 'center',
+    minHeight: 30,
   },
   text: {
     color: 'white',
@@ -199,5 +222,11 @@ const styles = StyleSheet.create({
   },
   ghostText: {
     color: theme.colors.primary,
+  },
+  onboardingText: {
+    color: theme.colors.text,
+    fontWeight: '400',
+    fontSize: theme.fontSizes.md,
+    marginLeft: 4,
   },
 }); 

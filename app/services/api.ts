@@ -1,136 +1,105 @@
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import { Restaurant } from '../types/restaurant';
-import { Message } from '../types/conversation';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getApiBaseUrl } from '../utils/networkUtils';
+import { Alert, Platform } from 'react-native';
 
-// In development, you'll use your machine's IP address or localhost
-// In production, you'll use your deployed API URL
-const API_URL = __DEV__ ? 'http://localhost:3000/api' : 'https://your-production-api.com/api';
+// Get the appropriate API URL based on environment and platform
+const API_URL = getApiBaseUrl();
 
-// Set up axios instance with base URL and common headers
 const api = axios.create({
   baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
+  // Increase timeout for slow connections
+  timeout: 15000,
 });
 
-// Interface for conversation request payload
-interface ConversationRequest {
-  message: string;
-  history: Message[];
-  preferences?: {
-    partySize?: number;
-    cuisines?: string[];
-    dietaryRestrictions?: string[];
-    priceRange?: string;
-    location?: string | { city: string; neighborhood?: string } | null;
-  };
+// New type for FastAPI backend request
+export interface AdviseRequest {
+  vibe?: string;
+  partySize?: string;
+  budget?: string;
+  cuisines?: string[];
+  location?: string;
 }
 
-// Interface for conversation response
-interface ConversationResponse {
-  message: string;
-  recommendations?: Restaurant[];
-}
-
-// Mock function to generate recommendations (for development/testing)
-export const generateMockRecommendations = (
-  message: string,
-  history: Message[],
-  preferences?: ConversationRequest['preferences']
-): Restaurant[] => {
-  try {
-    // Extract location name (could be string or object with city property)
-    const locationName = preferences?.location 
-      ? (typeof preferences.location === 'string' 
-        ? preferences.location 
-        : preferences.location.city) 
-      : 'Downtown';
-
-    // Safely get cuisines, with fallback to default array
-    const cuisines = (preferences?.cuisines && preferences.cuisines.length > 0) 
-      ? preferences.cuisines 
-      : ['Italian', 'Japanese', 'Mexican', 'American', 'Thai'];
-    
-    // Create 3 mock restaurants
-    return Array(3).fill(0).map((_, i) => {
-      // Safely pick a random cuisine
-      const randomIndex = Math.floor(Math.random() * cuisines.length);
-      const randomCuisine = cuisines[randomIndex] || 'American'; // Fallback if array access fails
-      
-      const randomPrice = preferences?.priceRange || ['$', '$$', '$$$'][Math.floor(Math.random() * 3)];
-      
-      // Safely handle all uses of randomCuisine
-      const cuisineDisplay = randomCuisine ? randomCuisine : 'Restaurant';
-      const cuisineDescriptionText = randomCuisine ? randomCuisine.toLowerCase() : 'delicious';
-      
-      return {
-        id: `mock-${i}-${Date.now()}`,
-        name: `${cuisineDisplay} Delight ${i + 1}`,
-        description: `A wonderful ${cuisineDescriptionText} restaurant with a cozy atmosphere.`,
-        cuisineType: cuisineDisplay,
-        priceRange: randomPrice,
-        location: locationName,
-        rating: (Math.random() * 2 + 3).toFixed(1), // Rating between 3.0 and 5.0
-        imageUrl: null, // Will be replaced with fallback image
-        reasonsToRecommend: [
-          `Serves authentic ${cuisineDescriptionText} cuisine`,
-          `Perfect for parties of ${preferences?.partySize || 2}`,
-          `Offers a ${randomPrice} price point`
-        ]
-      };
-    });
-  } catch (error) {
-    console.error('Error generating mock recommendations:', error);
-    // Return fallback recommendation if anything fails
-    return [{
-      id: `fallback-${Date.now()}`,
-      name: 'Restaurant Recommendation',
-      description: 'A nice restaurant we think you might enjoy based on your preferences.',
-      cuisineType: 'Various',
-      priceRange: '$$',
-      location: 'Nearby',
-      rating: 4.2,
-      imageUrl: '',
-      reasonsToRecommend: [
-        'Selected based on your preferences',
-        'Popular choice in the area',
-        'Good reviews from diners'
-      ]
-    }];
-  }
-};
-
-// API functions
 export const conversationService = {
-  // Process a user message and get a response with recommendations
-  processMessage: async (data: ConversationRequest): Promise<ConversationResponse> => {
+  processMessage: async (data: AdviseRequest): Promise<{ response: string }> => {
     try {
-      const response = await api.post('/conversations', data);
+      console.log(`📤 Sending request to: ${API_URL}/advise with data:`, JSON.stringify(data));
+      const response = await api.post('/advise', data);
+      console.log(`📥 Received response:`, JSON.stringify(response.data));
       return response.data;
     } catch (error) {
-      console.error('Error processing message:', error);
+      // Get detailed error information
+      const axiosError = error as AxiosError;
       
-      // Return mock data if API call fails
-      const mockResponse: ConversationResponse = {
-        message: "I found these restaurants that match your preferences:",
-        recommendations: generateMockRecommendations(data.message, data.history, data.preferences)
+      console.error('🔴 API Error:', {
+        message: axiosError.message,
+        code: axiosError.code,
+        status: axiosError.response?.status,
+        statusText: axiosError.response?.statusText,
+        data: axiosError.response?.data,
+        url: axiosError.config?.url,
+        method: axiosError.config?.method,
+      });
+      
+      // Show an alert with helpful troubleshooting tips
+      if (axiosError.message.includes('Network Error')) {
+        const tips = Platform.OS === 'ios' 
+          ? '• Make sure you entered the correct IP address in networkUtils.ts\n• Ensure your phone and computer are on the same WiFi network\n• Check if your FastAPI server is running with --host 0.0.0.0'
+          : '• Check network configuration\n• Ensure the server is running';
+          
+        Alert.alert(
+          'Network Connection Error',
+          `Could not connect to the server at ${API_URL}.\n\nTroubleshooting tips:\n${tips}`,
+          [{ text: 'OK' }]
+        );
+      }
+      
+      return {
+        response: "Sorry, I couldn't fetch a recommendation right now. Please check your network connection and make sure your phone and computer are on the same WiFi network.",
       };
-      
-      return mockResponse;
     }
   },
   
-  // Get detailed information about a specific restaurant
-  getRestaurantDetails: async (id: string): Promise<Restaurant> => {
+  // Method to get restaurant details by ID from AsyncStorage
+  getRestaurantDetails: async (id: string): Promise<Restaurant | null> => {
     try {
-      const response = await api.get(`/restaurants/${id}`);
-      return response.data;
+      // Check AsyncStorage for restaurant data
+      const storedRestaurants = await AsyncStorage.getItem('@DateMeal:recommendations');
+      if (storedRestaurants) {
+        const restaurants = JSON.parse(storedRestaurants);
+        const restaurant = restaurants.find((r: Restaurant) => r.id === id);
+        if (restaurant) {
+          return restaurant;
+        }
+      }
+      
+      // If not found in storage, return a mock restaurant
+      return {
+        id,
+        name: "Sample Restaurant",
+        description: "This is a sample restaurant description. The restaurant was selected based on your preferences.",
+        cuisineType: "Italian",
+        priceRange: "$$$",
+        location: "NYC",
+        rating: 4.7,
+        imageUrl: `https://source.unsplash.com/featured/?restaurant,italian`,
+        address: "123 Main St, New York, NY",
+        phone: "(212) 555-1234",
+        website: "https://example.com",
+        openingHours: ["11:00 AM - 10:00 PM", "11:00 AM - 10:00 PM", "11:00 AM - 10:00 PM", "11:00 AM - 10:00 PM", "11:00 AM - 11:00 PM", "11:00 AM - 11:00 PM", "12:00 PM - 9:00 PM"],
+        highlights: ["Italian", "Romantic", "Authentic"],
+        reasonsToRecommend: ["Perfect for a romantic evening", "Outstanding service", "Award-winning chef"],
+      };
     } catch (error) {
       console.error('Error fetching restaurant details:', error);
-      throw error;
+      return null;
     }
   }
 };
 
-export default api; 
+export default api;

@@ -5,7 +5,7 @@ import theme from '../theme';
 interface SelectableButtonProps {
   label: string;
   onPress: (event: GestureResponderEvent) => void;
-  variant?: 'default' | 'small' | 'primary';
+  variant?: 'default' | 'small' | 'primary' | 'grid';
   selected?: boolean;
   style?: ViewStyle;
   icon?: React.ReactNode;
@@ -49,6 +49,8 @@ export default function SelectableButton({
         return styles.small;
       case 'primary':
         return styles.primary;
+      case 'grid':
+        return styles.grid;
       default:
         return styles.default;
     }
@@ -78,9 +80,10 @@ export default function SelectableButton({
           style={[
             styles.buttonText,
             variant === 'primary' && styles.primaryText,
+            variant === 'grid' && styles.gridText,
             selected && styles.selectedText
           ]}
-          numberOfLines={2}
+          numberOfLines={variant === 'grid' ? 1 : 2}
           ellipsizeMode="tail"
         >
           {label}
@@ -115,14 +118,22 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.md,
     marginRight: theme.spacing.md,
   },
-  primary: {
+  grid: {
     height: 60,
     width: '100%',
+    paddingHorizontal: theme.spacing.md,
+    marginBottom: 0,
+  },
+  primary: {
+    height: 60,
+    minWidth: 280,
+    maxWidth: '85%',
     backgroundColor: theme.colors.primary,
     borderColor: theme.colors.primary,
+    alignSelf: 'center',
   },
   selected: {
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: theme.colors.primary,
     backgroundColor: theme.colors.primaryLight,
   },
@@ -135,6 +146,9 @@ const styles = StyleSheet.create({
     color: theme.colors.foreground,
     fontWeight: '600',
     textAlign: 'center',
+    paddingHorizontal: theme.spacing.sm,
+    flexShrink: 1,
+    flexWrap: 'wrap',
   },
   primaryText: {
     color: 'white',
@@ -146,5 +160,9 @@ const styles = StyleSheet.create({
   },
   iconContainer: {
     marginRight: theme.spacing.sm,
-  }
+  },
+  gridText: {
+    fontSize: theme.fontSizes.sm,
+    paddingHorizontal: theme.spacing.xs,
+  },
 }); 

@@ -1,9 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   StatusBar,
   ScrollView,
   Image,
@@ -11,13 +10,17 @@ import {
   Linking,
   ActivityIndicator,
   Alert,
+  Animated,
+  Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import theme from '../../theme';
 import { conversationService } from '../../services/api';
 import { Restaurant } from '../../types/restaurant';
 import PreferencesMenuButton from '../../components/PreferencesMenuButton';
+import Button from '../../components/Button';
 
 export default function RestaurantDetailScreen() {
   const navigation = useNavigation();
@@ -26,12 +29,12 @@ export default function RestaurantDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
-  // Get the restaurant ID from route params
+  const [isSaved, setIsSaved] = useState(false);
+
+  const scrollY = useRef(new Animated.Value(0)).current;
   const { id } = route.params as { id: string };
-  
+
   useEffect(() => {
-    // Fetch restaurant details from API
     const fetchRestaurantDetails = async () => {
       try {
         setLoading(true);
@@ -44,221 +47,160 @@ export default function RestaurantDetailScreen() {
         setLoading(false);
       }
     };
-    
+
     fetchRestaurantDetails();
   }, [id]);
-  
-  const handleBack = () => {
-    navigation.goBack();
+
+  const handleBack = () => navigation.goBack();
+  const handleCall = () => restaurant?.phone ? Linking.openURL(`tel:${restaurant.phone}`) : Alert.alert('No Phone Number');
+  const handleWebsite = () => restaurant?.website ? Linking.openURL(restaurant.website) : Alert.alert('No Website');
+  const handleDirections = () => restaurant?.address ? Linking.openURL(`http://maps.apple.com/?q=${encodeURIComponent(restaurant.address)}`) : Alert.alert('No Address');
+  const handleSave = () => {
+    setIsSaved(!isSaved);
+    Alert.alert(
+      isSaved ? "Restaurant Removed" : "Restaurant Saved",
+      isSaved ? "Restaurant removed from your saved list." : "Restaurant saved to your list!",
+      [{ text: "OK" }]
+    );
   };
-  
-  const handleCall = () => {
-    if (restaurant?.phone) {
-      Linking.openURL(`tel:${restaurant.phone}`);
-    } else {
-      Alert.alert('No Phone Number', 'This restaurant does not have a phone number listed.');
-    }
-  };
-  
-  const handleWebsite = () => {
-    if (restaurant?.website) {
-      Linking.openURL(restaurant.website);
-    } else {
-      Alert.alert('No Website', 'This restaurant does not have a website listed.');
-    }
-  };
-  
-  const handleDirections = () => {
-    if (restaurant?.address) {
-      const address = encodeURIComponent(restaurant.address);
-      Linking.openURL(`http://maps.apple.com/?q=${address}`);
-    } else {
-      Alert.alert('No Address', 'This restaurant does not have an address listed.');
-    }
-  };
-  
+
   if (loading) {
     return (
-      <SafeAreaView style={styles.loadingContainer}>
-        <StatusBar barStyle="dark-content" backgroundColor={theme.colors.background} />
+      <SafeAreaView style={styles.safeArea}><View style={styles.loadingContainer}>
+        <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
         <ActivityIndicator size="large" color={theme.colors.primary} />
         <Text style={styles.loadingText}>Loading restaurant details...</Text>
-      </SafeAreaView>
+      </View></SafeAreaView>
     );
   }
-  
+
   if (error || !restaurant) {
     return (
-      <SafeAreaView style={styles.errorContainer}>
-        <StatusBar barStyle="dark-content" backgroundColor={theme.colors.background} />
+      <SafeAreaView style={styles.safeArea}><View style={styles.errorContainer}>
+        <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
         <Ionicons name="alert-circle-outline" size={50} color={theme.colors.error} />
         <Text style={styles.errorText}>{error || 'Restaurant not found'}</Text>
-        <TouchableOpacity 
-          style={styles.errorButton}
-          onPress={handleBack}
-        >
+        <TouchableOpacity style={styles.errorButton} onPress={handleBack}>
           <Text style={styles.errorButtonText}>Go Back</Text>
         </TouchableOpacity>
-      </SafeAreaView>
+      </View></SafeAreaView>
     );
   }
-  
+
+  const menuItems = ["Spaghetti Carbonara", "Chicken Teriyaki", "Vodka", "Tiramisu", "Unagi Don", "Americano"];
+  const headerHeight = 250;
+
+  const imageOpacity = scrollY.interpolate({
+    inputRange: [0, headerHeight * 0.5, headerHeight],
+    outputRange: [1, 0.8, 0.6],
+    extrapolate: 'clamp',
+  });
+
+  const imageTranslateY = scrollY.interpolate({
+    inputRange: [0, headerHeight],
+    outputRange: [0, headerHeight * 0.5],
+    extrapolate: 'clamp',
+  });
+
+  const imageScale = scrollY.interpolate({
+    inputRange: [-headerHeight, 0],
+    outputRange: [1.5, 1],
+    extrapolateRight: 'clamp',
+  });
+
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={theme.colors.background} />
-      
-      {/* Header with Image */}
-      <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={handleBack}
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
+
+        <Animated.ScrollView
+          style={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          scrollEventThrottle={16}
+          onScroll={Animated.event(
+            [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+            { useNativeDriver: true }
+          )}
         >
-          <Ionicons name="chevron-back" size={24} color="#FFFFFF" />
-        </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={styles.menuButton}
-        >
-          <PreferencesMenuButton />
-        </TouchableOpacity>
-        
-        {!imageError && restaurant.imageUrl ? (
-          <Image
-            source={{ uri: restaurant.imageUrl }}
-            style={styles.headerImage}
-            onError={() => setImageError(true)}
-          />
-        ) : (
-          <View style={styles.headerPlaceholder}>
-            <Text style={styles.headerPlaceholderText}>{restaurant.name[0]}</Text>
+          <View style={styles.header}>
+            {!imageError && restaurant.imageUrl ? (
+              <Animated.Image
+                source={{ uri: restaurant.imageUrl }}
+                style={[styles.headerImage, { opacity: imageOpacity, transform: [{ translateY: imageTranslateY }, { scale: imageScale }] }]}
+                onError={() => setImageError(true)}
+              />
+            ) : (
+              <Animated.View style={[styles.headerPlaceholder, { opacity: imageOpacity, transform: [{ translateY: imageTranslateY }] }]}> 
+                <Text style={styles.headerPlaceholderText}>{restaurant.name[0]}</Text>
+              </Animated.View>
+            )}
           </View>
-        )}
-        
-        <View style={styles.headerOverlay} />
-        <View style={styles.restaurantHeaderInfo}>
-          <Text style={styles.restaurantName}>{restaurant.name}</Text>
-          <View style={styles.restaurantMeta}>
-            <Text style={styles.metaText}>{restaurant.cuisineType}</Text>
-            <Text style={styles.metaDot}>•</Text>
-            <Text style={styles.metaText}>{restaurant.priceRange}</Text>
-            <Text style={styles.metaDot}>•</Text>
-            <Text style={styles.metaText}>{restaurant.rating} ★</Text>
-          </View>
-        </View>
-      </View>
-      
-      {/* Main Content */}
-      <ScrollView style={styles.scrollContent}>
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>About</Text>
-          <Text style={styles.description}>{restaurant.description}</Text>
-        </View>
-        
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Why You'll Love It</Text>
-          {restaurant.reasonsToRecommend.map((reason: string, index: number) => (
-            <View key={index} style={styles.reasonItem}>
-              <Ionicons name="checkmark-circle" size={16} color={theme.colors.primary} />
-              <Text style={styles.reasonText}>{reason}</Text>
+
+          <View style={styles.contentContainer}>
+            <Text style={styles.restaurantName}>{restaurant.name}</Text>
+            <View style={styles.ratingContainer}>
+              <View style={styles.starsContainer}>
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <Ionicons
+                    key={star}
+                    name={star <= Math.floor(restaurant.rating) ? "star" : (star <= restaurant.rating + 0.5 ? "star-half" : "star-outline")}
+                    size={20}
+                    color="#FFD700"
+                    style={styles.starIcon}
+                  />
+                ))}
+              </View>
+              <Text style={styles.ratingText}>{restaurant.rating} ({restaurant.reviews?.length || 0})</Text>
             </View>
-          ))}
-        </View>
-        
-        {(restaurant.address || restaurant.phone || restaurant.website || restaurant.openingHours) && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Info</Text>
-            {restaurant.address && (
-              <View style={styles.infoItem}>
-                <Ionicons name="location" size={18} color={theme.colors.primary} style={styles.infoIcon} />
-                <Text style={styles.infoText}>{restaurant.address}</Text>
-              </View>
-            )}
-            {restaurant.openingHours && restaurant.openingHours.length > 0 && (
-              <View style={styles.infoItem}>
-                <Ionicons name="time" size={18} color={theme.colors.primary} style={styles.infoIcon} />
-                <View>
-                  {restaurant.openingHours.map((hours: string, index: number) => (
-                    <Text key={index} style={styles.infoText}>{hours}</Text>
-                  ))}
-                </View>
-              </View>
-            )}
-            {restaurant.phone && (
-              <View style={styles.infoItem}>
-                <Ionicons name="call" size={18} color={theme.colors.primary} style={styles.infoIcon} />
-                <Text style={[styles.infoText, styles.linkText]} onPress={handleCall}>{restaurant.phone}</Text>
-              </View>
-            )}
-            {restaurant.website && (
-              <View style={styles.infoItem}>
-                <Ionicons name="globe" size={18} color={theme.colors.primary} style={styles.infoIcon} />
-                <Text style={[styles.infoText, styles.linkText]} onPress={handleWebsite}>{restaurant.website}</Text>
-              </View>
-            )}
-          </View>
-        )}
-        
-        {restaurant.reviews && restaurant.reviews.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Reviews</Text>
-            {restaurant.reviews.map((review: any, index: number) => (
-              <View key={index} style={styles.reviewItem}>
-                <View style={styles.reviewHeader}>
-                  <Text style={styles.reviewAuthor}>{review.author}</Text>
-                  <View style={styles.reviewRating}>
-                    <Text style={styles.reviewRatingText}>{review.rating}</Text>
-                    <Ionicons name="star" size={12} color="#FFD700" />
-                  </View>
-                </View>
-                <Text style={styles.reviewDate}>{review.date}</Text>
-                <Text style={styles.reviewComment}>{review.comment}</Text>
-              </View>
+
+            <Text style={styles.description}>{restaurant.description}</Text>
+            <Text style={styles.sectionTitle}>Why you'll love it</Text>
+            {restaurant.reasonsToRecommend.map((reason: string, index: number) => (
+              <View key={index} style={styles.reasonItem}><Text style={styles.reasonText}>"{reason}"</Text></View>
             ))}
+
+            <View style={styles.tagsContainer}>
+              <View style={styles.tag}><Text style={styles.tagText}>Popular for {restaurant.cuisineType}</Text></View>
+              <View style={styles.tag}><Text style={styles.tagText}>{restaurant.priceRange}</Text></View>
+            </View>
+
+            <Text style={styles.sectionTitle}>Menu preview</Text>
+            <View style={styles.menuContainer}>
+              {menuItems.map((item, index) => (
+                <View key={index} style={styles.menuItem}>
+                  <Text style={styles.bulletPoint}>•</Text>
+                  <Text style={styles.menuItemText}>{item}</Text>
+                </View>
+              ))}
+            </View>
+
+            {restaurant.address && (<View style={styles.contactItem}><Ionicons name="location" size={24} color={theme.colors.primary} style={styles.contactIcon} /><Text style={styles.contactText}>{restaurant.address}</Text></View>)}
+            {restaurant.website && (<View style={styles.contactItem}><Ionicons name="globe" size={24} color={theme.colors.primary} style={styles.contactIcon} /><TouchableOpacity onPress={handleWebsite}><Text style={[styles.contactText, styles.linkText]}>{restaurant.website}</Text></TouchableOpacity></View>)}
+            {restaurant.phone && (<View style={styles.contactItem}><Ionicons name="call" size={24} color={theme.colors.primary} style={styles.contactIcon} /><TouchableOpacity onPress={handleCall}><Text style={[styles.contactText, styles.linkText]}>{restaurant.phone}</Text></TouchableOpacity></View>)}
+            <View style={styles.bottomPadding} />
           </View>
-        )}
-      </ScrollView>
-      
-      {/* Action Buttons */}
-      <View style={styles.actionButtons}>
-        <TouchableOpacity 
-          style={styles.actionButton} 
-          onPress={handleCall}
-          disabled={!restaurant.phone}
-        >
-          <Ionicons name="call" size={20} color={restaurant.phone ? theme.colors.primary : theme.colors.gray[400]} />
-          <Text style={[
-            styles.actionButtonText,
-            !restaurant.phone && { color: theme.colors.gray[400] }
-          ]}>Call</Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={styles.actionButton} 
-          onPress={handleDirections}
-          disabled={!restaurant.address}
-        >
-          <Ionicons name="navigate" size={20} color={restaurant.address ? theme.colors.primary : theme.colors.gray[400]} />
-          <Text style={[
-            styles.actionButtonText,
-            !restaurant.address && { color: theme.colors.gray[400] }
-          ]}>Directions</Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={styles.actionButton} 
-          onPress={handleWebsite}
-          disabled={!restaurant.website}
-        >
-          <Ionicons name="globe" size={20} color={restaurant.website ? theme.colors.primary : theme.colors.gray[400]} />
-          <Text style={[
-            styles.actionButtonText,
-            !restaurant.website && { color: theme.colors.gray[400] }
-          ]}>Website</Text>
-        </TouchableOpacity>
+        </Animated.ScrollView>
+
+        <View style={styles.fixedNavigation}>
+          <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+            <Ionicons name="chevron-back" size={24} color="white" />
+          </TouchableOpacity>
+          <View style={styles.menuButtonContainer}><PreferencesMenuButton /></View>
+        </View>
+
+        <View style={styles.bottomButtons}>
+          <Button title="Save" variant="primary" onPress={handleSave} style={styles.saveButton} />
+        </View>
       </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+  },
   container: {
     flex: 1,
     backgroundColor: theme.colors.background,
@@ -267,7 +209,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: theme.colors.background,
   },
   loadingText: {
     marginTop: theme.spacing.md,
@@ -299,9 +240,33 @@ const styles = StyleSheet.create({
     fontSize: theme.fontSizes.md,
     fontWeight: '600',
   },
+  fixedNavigation: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 50 : 30,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: theme.spacing.lg,
+    zIndex: 10,
+  },
+  backButton: {
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderRadius: 20,
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  menuButtonContainer: {
+    // Container for the menu button
+  },
+  scrollContent: {
+    flex: 1,
+  },
   header: {
     height: 250,
-    position: 'relative',
+    overflow: 'hidden', // Important for image animation
   },
   headerImage: {
     width: '100%',
@@ -320,163 +285,121 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: theme.colors.primary,
   },
-  headerOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
-  },
-  backButton: {
-    position: 'absolute',
-    top: theme.spacing.md,
-    left: theme.spacing.md,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    borderRadius: 20,
-    width: 36,
-    height: 36,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 10,
-  },
-  menuButton: {
-    position: 'absolute',
-    top: theme.spacing.md,
-    right: theme.spacing.md,
-    zIndex: 10,
-  },
-  restaurantHeaderInfo: {
-    position: 'absolute',
-    bottom: theme.spacing.lg,
-    left: theme.spacing.lg,
-    right: theme.spacing.lg,
+  contentContainer: {
+    padding: theme.spacing.lg,
+    paddingBottom: theme.spacing.xxl,
+    backgroundColor: theme.colors.background,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    marginTop: -20, // Overlap with image
   },
   restaurantName: {
-    fontSize: theme.fontSizes.xxl,
+    fontSize: 32,
     fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginBottom: 4,
-    textShadowColor: 'rgba(0, 0, 0, 0.75)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+    color: theme.colors.text,
+    marginTop: theme.spacing.md,
+    marginBottom: theme.spacing.sm,
   },
-  restaurantMeta: {
+  ratingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: theme.spacing.lg,
   },
-  metaText: {
+  starsContainer: {
+    flexDirection: 'row',
+    marginRight: theme.spacing.sm,
+  },
+  starIcon: {
+    marginRight: 2,
+  },
+  ratingText: {
     fontSize: theme.fontSizes.md,
-    color: '#FFFFFF',
-    textShadowColor: 'rgba(0, 0, 0, 0.75)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
-  },
-  metaDot: {
-    fontSize: theme.fontSizes.md,
-    color: '#FFFFFF',
-    marginHorizontal: 6,
-    textShadowColor: 'rgba(0, 0, 0, 0.75)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
-  },
-  scrollContent: {
-    flex: 1,
-  },
-  section: {
-    padding: theme.spacing.lg,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.gray[200],
-  },
-  sectionTitle: {
-    fontSize: theme.fontSizes.lg,
-    fontWeight: '600',
-    color: theme.colors.text,
-    marginBottom: theme.spacing.md,
+    color: theme.colors.textSecondary,
   },
   description: {
     fontSize: theme.fontSizes.md,
     color: theme.colors.text,
     lineHeight: theme.fontSizes.md * 1.5,
+    marginBottom: theme.spacing.xl,
+  },
+  sectionTitle: {
+    fontSize: theme.fontSizes.xl,
+    fontWeight: '600',
+    color: theme.colors.text,
+    marginBottom: theme.spacing.md,
+    marginTop: theme.spacing.lg,
   },
   reasonItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
     marginBottom: theme.spacing.sm,
   },
   reasonText: {
-    flex: 1,
     fontSize: theme.fontSizes.md,
     color: theme.colors.text,
-    marginLeft: theme.spacing.sm,
     lineHeight: theme.fontSizes.md * 1.4,
+    fontStyle: 'italic',
   },
-  infoItem: {
+  tagsContainer: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexWrap: 'wrap',
+    marginTop: theme.spacing.md,
+    marginBottom: theme.spacing.md,
+  },
+  tag: {
+    backgroundColor: theme.colors.gray[100],
+    borderRadius: 20,
+    paddingVertical: theme.spacing.xs,
+    paddingHorizontal: theme.spacing.md,
+    marginRight: theme.spacing.sm,
     marginBottom: theme.spacing.sm,
   },
-  infoIcon: {
-    marginTop: 2,
-    marginRight: theme.spacing.sm,
+  tagText: {
+    fontSize: theme.fontSizes.sm,
+    color: theme.colors.textSecondary,
   },
-  infoText: {
-    flex: 1,
+  menuContainer: {
+    marginTop: theme.spacing.sm,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    marginBottom: theme.spacing.sm,
+    alignItems: 'flex-start',
+  },
+  bulletPoint: {
+    fontSize: theme.fontSizes.lg,
+    color: theme.colors.primary,
+    marginRight: theme.spacing.sm,
+    lineHeight: theme.fontSizes.md * 1.4,
+  },
+  menuItemText: {
     fontSize: theme.fontSizes.md,
     color: theme.colors.text,
-    lineHeight: theme.fontSizes.md * 1.4,
+  },
+  contactItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: theme.spacing.md,
+  },
+  contactIcon: {
+    marginRight: theme.spacing.md,
+  },
+  contactText: {
+    fontSize: theme.fontSizes.md,
+    color: theme.colors.text,
+    flex: 1,
   },
   linkText: {
     color: theme.colors.primary,
   },
-  reviewItem: {
-    marginBottom: theme.spacing.md,
+  bottomButtons: {
     padding: theme.spacing.md,
-    backgroundColor: theme.colors.gray[50],
-    borderRadius: theme.borderRadius.default,
-  },
-  reviewHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  reviewAuthor: {
-    fontSize: theme.fontSizes.md,
-    fontWeight: '600',
-    color: theme.colors.text,
-  },
-  reviewRating: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  reviewRatingText: {
-    fontSize: theme.fontSizes.sm,
-    color: theme.colors.text,
-    marginRight: 2,
-  },
-  reviewDate: {
-    fontSize: theme.fontSizes.sm,
-    color: theme.colors.textSecondary,
-    marginBottom: 4,
-  },
-  reviewComment: {
-    fontSize: theme.fontSizes.md,
-    color: theme.colors.text,
-    lineHeight: theme.fontSizes.md * 1.4,
-  },
-  actionButtons: {
-    flexDirection: 'row',
     borderTopWidth: 1,
     borderTopColor: theme.colors.gray[200],
-    paddingVertical: theme.spacing.md,
-    paddingHorizontal: theme.spacing.lg,
     backgroundColor: theme.colors.background,
   },
-  actionButton: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+  saveButton: {
+    width: '100%',
   },
-  actionButtonText: {
-    fontSize: theme.fontSizes.sm,
-    color: theme.colors.primary,
-    marginTop: 4,
+  bottomPadding: {
+    height: 60, // Extra padding to account for the save button
   },
 }); 

@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, StatusBar, Animated } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, StatusBar, Animated, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import SelectableButton from '../../components/SelectableButton';
 import PageControl from '../../components/PageControl';
 import theme from '../../theme';
 import { usePreferences } from '../../store/usePreferences';
+import PreferencesMenuButton from '../../components/PreferencesMenuButton';
 
 export default function Step1Screen() {
   const navigation = useNavigation();
@@ -21,6 +22,12 @@ export default function Step1Screen() {
       useNativeDriver: true,
     }).start();
   }, []);
+  
+  // Exit to Home handler
+  const handleExitToHome = () => {
+    // @ts-ignore
+    navigation.navigate('Home');
+  };
   
   const handleSelection = (size: string) => {
     setSelectedSize(size);
@@ -45,10 +52,10 @@ export default function Step1Screen() {
       
       {/* Header */}
       <View style={styles.header}>
-        <View style={styles.headerTextContainer}>
-          <Text style={styles.greeting}>
-            Hi {userName || 'Superstar'}!
-          </Text>
+        <View style={styles.headerTop}>
+          {/* No back button on first screen */}
+          <View style={{width: 24}} />
+          <PreferencesMenuButton />
         </View>
         <View style={styles.divider} />
       </View>
@@ -83,6 +90,17 @@ export default function Step1Screen() {
       <View style={styles.footer}>
         <PageControl total={6} current={0} />
       </View>
+      
+      {/* Exit to Home */}
+      <View style={styles.exitContainer}>
+        <View style={styles.exitDivider} />
+        <TouchableOpacity 
+          style={styles.exitToHomeButton}
+          onPress={handleExitToHome}
+        >
+          <Text style={styles.exitToHomeText}>Exit to Home</Text>
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 }
@@ -91,41 +109,62 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background,
-    paddingHorizontal: theme.spacing.lg,
   },
   header: {
-    paddingTop: theme.spacing.xl,
-    height: 80,
+    paddingBottom: theme.spacing.sm,
+    height: 80, // Narrower header
+    paddingHorizontal: theme.spacing.lg,
   },
-  headerTextContainer: {
+  headerTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  greeting: {
-    fontSize: theme.fontSizes.xl,
-    fontWeight: '700',
-    color: theme.colors.text,
+    alignItems: 'center',
   },
   divider: {
     height: 1,
     backgroundColor: theme.colors.gray[200],
-    marginTop: theme.spacing.md,
+    marginTop: theme.spacing.sm,
   },
   content: {
     flex: 1,
     paddingTop: theme.spacing.xl,
+    paddingHorizontal: theme.spacing.lg,
   },
   title: {
     fontSize: theme.fontSizes.xxxl,
     fontWeight: '600',
     color: theme.colors.text,
     marginBottom: theme.spacing.xl,
+    width: '100%',
+    alignSelf: 'center',
   },
   buttonContainer: {
     gap: theme.spacing.md,
+    width: '100%',
+    alignSelf: 'center',
+    marginTop: theme.spacing.lg,
   },
   footer: {
-    marginBottom: theme.spacing.xxl,
+    marginBottom: theme.spacing.md,
+    alignItems: 'center',
+  },
+  exitContainer: {
+    width: '100%',
+  },
+  exitDivider: {
+    height: 1,
+    backgroundColor: theme.colors.gray[200],
+    width: '100%',
+  },
+  exitToHomeButton: {
+    paddingTop: theme.spacing.lg,
+    //paddingBottom: theme.spacing.sm,
+    width: '100%',
+    alignItems: 'center',
+  },
+  exitToHomeText: {
+    fontSize: theme.fontSizes.md,
+    color: theme.colors.text,
+    fontWeight: '500',
   },
 }); 

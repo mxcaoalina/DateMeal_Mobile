@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,7 +8,11 @@ import {
   TouchableOpacity,
   TextInput,
   StatusBar,
-  Alert
+  Alert,
+  Keyboard,
+  Platform,
+  KeyboardAvoidingView,
+  TouchableWithoutFeedback
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -86,6 +90,8 @@ export default function PreferencesScreen() {
   const [allergies, setAllergies] = useState<string[]>([]);
   const [nogos, setNogos] = useState<string[]>([]);
   const [hasChanges, setHasChanges] = useState(false);
+  const [keyboardShown, setKeyboardShown] = useState(false);
+  const scrollViewRef = useRef<ScrollView>(null);
   
   // Initialize state from store
   useEffect(() => {
@@ -102,6 +108,35 @@ export default function PreferencesScreen() {
     
     setHasChanges(cuisinesChanged || allergiesChanged || nogosChanged);
   }, [cuisines, allergies, nogos, sessionPreferences]);
+  
+  // Better keyboard handling
+  useEffect(() => {
+    const keyboardWillShow = Platform.OS === 'ios' 
+      ? 'keyboardWillShow' 
+      : 'keyboardDidShow';
+    const keyboardWillHide = Platform.OS === 'ios' 
+      ? 'keyboardWillHide' 
+      : 'keyboardDidHide';
+    
+    const keyboardDidShowListener = Keyboard.addListener(
+      keyboardWillShow, 
+      () => {
+        setKeyboardShown(true);
+      }
+    );
+    
+    const keyboardDidHideListener = Keyboard.addListener(
+      keyboardWillHide, 
+      () => {
+        setKeyboardShown(false);
+      }
+    );
+
+    return () => {
+      keyboardDidShowListener.remove();
+      keyboardDidHideListener.remove();
+    };
+  }, []);
   
   const arraysEqual = (a: string[], b: string[]) => {
     if (a.length !== b.length) return false;
@@ -131,6 +166,10 @@ export default function PreferencesScreen() {
     setHasChanges(false);
   };
   
+  const dismissKeyboard = () => {
+    Keyboard.dismiss();
+  };
+  
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={theme.colors.background} />
@@ -140,48 +179,70 @@ export default function PreferencesScreen() {
         <TouchableOpacity style={styles.backButton} onPress={handleBack}>
           <Ionicons name="chevron-back" size={24} color={theme.colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Dining Preferences</Text>
+        <Text style={styles.headerTitle}>Your Dining Preferences</Text>
         <View style={styles.placeholder} />
       </View>
       
-      <ScrollView 
-        style={styles.content}
-        contentContainerStyle={styles.contentContainer}
-        showsVerticalScrollIndicator={false}
-      >
-        <Text style={styles.sectionDescription}>
-          Update your dining preferences to get better restaurant recommendations.
-        </Text>
-        
-        <TagInput
-          tags={cuisines}
-          setTags={setCuisines}
-          placeholder="Add a cuisine you enjoy..."
-          label="Favorite Cuisines"
-        />
-        
-        <TagInput
-          tags={allergies}
-          setTags={setAllergies}
-          placeholder="Add allergies or dietary restrictions..."
-          label="Allergies & Dietary Restrictions"
-        />
-        
-        <TagInput
-          tags={nogos}
-          setTags={setNogos}
-          placeholder="Add foods you don't enjoy..."
-          label="No-Go Foods"
-        />
-        
-        <Button
-          title="Save Preferences"
-          variant="primary"
-          onPress={handleSave}
-          disabled={!hasChanges}
-          style={styles.saveButton}
-        />
-      </ScrollView>
+      <TouchableWithoutFeedback onPress={dismissKeyboard}>
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.keyboardAvoidingContainer}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
+        >
+          <ScrollView 
+            ref={scrollViewRef}
+            style={styles.content}
+            contentContainerStyle={[
+              styles.contentContainer,
+              keyboardShown && styles.contentContainerWithKeyboard
+            ]}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+          >
+            <Text style={styles.sectionDescription}>
+              Customize your tastes to help us suggest the perfect spots for your next outing.
+            </Text>
+            
+            <TagInput
+              tags={cuisines}
+              setTags={setCuisines}
+              placeholder="Add a cuisine you enjoy..."
+              label="Favorite Cuisines"
+            />
+            
+            <TagInput
+              tags={allergies}
+              setTags={setAllergies}
+              placeholder="Add allergies or dietary restrictions..."
+              label="Allergies & Dietary Restrictions"
+            />
+            
+            <TagInput
+              tags={nogos}
+              setTags={setNogos}
+              placeholder="Add foods you don't enjoy..."
+              label="No-Go Foods"
+            />
+            
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity 
+                style={[
+                  styles.saveButton,
+                  !hasChanges && styles.saveButtonDisabled
+                ]}
+                onPress={handleSave}
+                disabled={!hasChanges}
+                activeOpacity={0.9}
+              >
+                <Text style={styles.saveButtonText}>Save Preferences</Text>
+              </TouchableOpacity>
+            </View>
+            
+            {keyboardShown && <View style={styles.keyboardSpacer} />}
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </TouchableWithoutFeedback>
     </SafeAreaView>
   );
 }
@@ -217,6 +278,9 @@ const styles = StyleSheet.create({
   contentContainer: {
     padding: theme.spacing.lg,
     paddingBottom: theme.spacing.xxl,
+  },
+  contentContainerWithKeyboard: {
+    paddingBottom: 30,
   },
   sectionDescription: {
     fontSize: theme.fontSizes.md,
@@ -276,6 +340,33 @@ const styles = StyleSheet.create({
     marginRight: 4,
   },
   saveButton: {
+    backgroundColor: '#000',
+    borderRadius: theme.borderRadius.xl,
+    padding: theme.spacing.md,
+    alignItems: 'center',
+    marginVertical: theme.spacing.sm,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  saveButtonDisabled: {
+    backgroundColor: '#9E9E9E',
+    opacity: 0.7,
+  },
+  saveButtonText: {
+    color: '#fff',
+    fontSize: theme.fontSizes.md,
+    fontWeight: '600',
+  },
+  buttonContainer: {
     marginTop: theme.spacing.lg,
+  },
+  keyboardSpacer: {
+    height: 100,
+  },
+  keyboardAvoidingContainer: {
+    flex: 1,
   },
 }); 
