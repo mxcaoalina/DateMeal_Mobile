@@ -33,14 +33,14 @@ interface AdviseResponse {
 export const conversationService = {
   processMessage: async (data: AdviseRequest): Promise<AdviseResponse> => {
     try {
-      console.log(`📤 Sending request to: ${API_URL}/advise with data:`, JSON.stringify(data));
+      console.log(`Sending request to: ${API_URL}/advise with data:`, JSON.stringify(data));
       const response = await api.post<AdviseResponse>('/advise', data);
-      console.log(`📥 Received response:`, JSON.stringify(response.data));
+      console.log(`Received response:`, JSON.stringify(response.data));
       return response.data;
     } catch (error) {
       const axiosError = error as AxiosError;
 
-      console.error('🔴 API Error:', {
+      console.error(' API Error:', {
         message: axiosError.message,
         code: axiosError.code,
         status: axiosError.response?.status,

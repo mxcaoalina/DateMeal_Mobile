@@ -30,16 +30,16 @@ export const fastApiAdapter = {
         absoluteNogos: preferences.absoluteNogos
       };
 
-      console.log('🔍 Sending preferences to API:', JSON.stringify(requestData, null, 2));
+      console.log('Sending preferences to API:', JSON.stringify(requestData, null, 2));
 
       const result = await conversationService.processMessage(requestData);
-      console.log('✅ Received response from API:', result.response);
+      console.log('Received response from API:', result.response);
 
       const recommendations = [result.restaurant];
 
       try {
         await AsyncStorage.setItem(RECOMMENDATIONS_KEY, JSON.stringify(recommendations));
-        console.log('💾 Saved recommendations to storage');
+        console.log('Saved recommendations to storage');
       } catch (err) {
         console.error('Error saving recommendations to AsyncStorage:', err);
       }
@@ -87,16 +87,16 @@ export const fastApiAdapter = {
         absoluteNogos: preferences.absoluteNogos
       };
 
-      console.log('🔍 Getting recommendations with preferences:', JSON.stringify(requestData, null, 2));
+      console.log('Getting recommendations with preferences:', JSON.stringify(requestData, null, 2));
 
       const result = await conversationService.processMessage(requestData);
-      console.log('✅ Received recommendation from API');
+      console.log('Received recommendation from API');
 
       const recommendations = [result.restaurant];
 
       try {
         await AsyncStorage.setItem(RECOMMENDATIONS_KEY, JSON.stringify(recommendations));
-        console.log('💾 Saved recommendations to storage');
+        console.log('Saved recommendations to storage');
       } catch (err) {
         console.error('Error saving recommendations to AsyncStorage:', err);
       }

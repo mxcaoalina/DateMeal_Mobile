@@ -20,5 +20,10 @@ export function getApiBaseUrl(): string {
     }
   }
   // Production environment
-  return 'https://' + Constants.expoConfig?.extra?.apiUrl || '0.0.0.0:8001';
+  return 'https://datemeal-backend-cga2d8fqfsctesh9.eastus2-01.azurewebsites.net';
+}
+
+// Helper function to get specific endpoint URLs
+export function getAdviseEndpointUrl(): string {
+  return `${getApiBaseUrl()}/advise`;
 }

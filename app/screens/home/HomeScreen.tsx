@@ -121,10 +121,10 @@ export default function HomeScreen() {
   const handleTalkToAssistant = () => {
     console.log('[HOME] Navigating to Chat screen');
     try {
-      navigation.navigate('Chat');
+      navigation.navigate('Chat', {});
     } catch (error) {
       console.error('[HOME] Navigation error:', error);
-      navigation.navigate('Chat');
+      navigation.navigate('Chat', {});
     }
   };
 
