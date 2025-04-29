@@ -58,10 +58,45 @@ export default function RestaurantDetailScreen() {
   }, [id, savedRestaurants]);
 
   const handleBack = () => navigation.goBack();
-  const handleCall = () => restaurant?.phone ? Linking.openURL(`tel:${restaurant.phone}`) : Alert.alert('No Phone Number');
-  const handleWebsite = () => restaurant?.website ? Linking.openURL(restaurant.website) : Alert.alert('No Website');
-  const handleDirections = () => restaurant?.address ? Linking.openURL(`http://maps.apple.com/?q=${encodeURIComponent(restaurant.address)}`) : Alert.alert('No Address');
   
+  const isRealData = (info: string | undefined) => {
+    if (!info) return false;
+    return !info.startsWith('[Sample]');
+  };
+  
+  const formatContactInfo = (info: string | undefined) => {
+    if (!info) return '';
+    // Remove the "[Sample]" prefix if it exists
+    return info.replace(/^\[Sample\]\s*/, '');
+  };
+  
+  const handleCall = () => {
+    if (!restaurant?.phone || !isRealData(restaurant.phone)) {
+      Alert.alert('No Phone Number', 'Sorry, we don\'t have the phone number for this restaurant.');
+      return;
+    }
+    
+    Linking.openURL(`tel:${formatContactInfo(restaurant.phone)}`);
+  };
+  
+  const handleWebsite = () => {
+    if (!restaurant?.website || !isRealData(restaurant.website)) {
+      Alert.alert('No Website', 'Sorry, we don\'t have the website for this restaurant.');
+      return;
+    }
+    
+    Linking.openURL(formatContactInfo(restaurant.website));
+  };
+  
+  const handleDirections = () => {
+    if (!restaurant?.address || !isRealData(restaurant.address)) {
+      Alert.alert('No Address', 'Sorry, we don\'t have the address for this restaurant.');
+      return;
+    }
+    
+    Linking.openURL(`http://maps.apple.com/?q=${encodeURIComponent(formatContactInfo(restaurant.address))}`);
+  };
+
   const handleSave = () => {
     if (!restaurant) return;
     
@@ -115,7 +150,6 @@ export default function RestaurantDetailScreen() {
     );
   }
 
-  const menuItems = ["Spaghetti Carbonara", "Chicken Teriyaki", "Vodka", "Tiramisu", "Unagi Don", "Americano"];
   const headerHeight = 250;
 
   const imageOpacity = scrollY.interpolate({
@@ -194,17 +228,46 @@ export default function RestaurantDetailScreen() {
 
             <Text style={styles.sectionTitle}>Menu preview</Text>
             <View style={styles.menuContainer}>
-              {menuItems.map((item, index) => (
-                <View key={index} style={styles.menuItem}>
-                  <Text style={styles.bulletPoint}>•</Text>
-                  <Text style={styles.menuItemText}>{item}</Text>
-                </View>
-              ))}
+              {restaurant.menuItems && restaurant.menuItems.length > 0 ? (
+                restaurant.menuItems.map((item, index) => (
+                  <View key={index} style={styles.menuItem}>
+                    <Text style={styles.bulletPoint}>•</Text>
+                    <Text style={styles.menuItemText}>{item.name}</Text>
+                  </View>
+                ))
+              ) : (
+                <Text style={styles.menuItemText}>Menu information not available</Text>
+              )}
             </View>
 
-            {restaurant.address && (<View style={styles.contactItem}><Ionicons name="location" size={24} color={theme.colors.primary} style={styles.contactIcon} /><Text style={styles.contactText}>{restaurant.address}</Text></View>)}
-            {restaurant.website && (<View style={styles.contactItem}><Ionicons name="globe" size={24} color={theme.colors.primary} style={styles.contactIcon} /><TouchableOpacity onPress={handleWebsite}><Text style={[styles.contactText, styles.linkText]}>{restaurant.website}</Text></TouchableOpacity></View>)}
-            {restaurant.phone && (<View style={styles.contactItem}><Ionicons name="call" size={24} color={theme.colors.primary} style={styles.contactIcon} /><TouchableOpacity onPress={handleCall}><Text style={[styles.contactText, styles.linkText]}>{restaurant.phone}</Text></TouchableOpacity></View>)}
+            <Text style={styles.sectionTitle}>Contact Information</Text>
+            {restaurant.address && isRealData(restaurant.address) && (
+              <View style={styles.contactItem}>
+                <Ionicons name="location" size={24} color={theme.colors.primary} style={styles.contactIcon} />
+                <Text style={styles.contactText}>{formatContactInfo(restaurant.address)}</Text>
+              </View>
+            )}
+            {restaurant.website && isRealData(restaurant.website) && (
+              <View style={styles.contactItem}>
+                <Ionicons name="globe" size={24} color={theme.colors.primary} style={styles.contactIcon} />
+                <TouchableOpacity onPress={handleWebsite}>
+                  <Text style={[styles.contactText, styles.linkText]}>{formatContactInfo(restaurant.website)}</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+            {restaurant.phone && isRealData(restaurant.phone) && (
+              <View style={styles.contactItem}>
+                <Ionicons name="call" size={24} color={theme.colors.primary} style={styles.contactIcon} />
+                <TouchableOpacity onPress={handleCall}>
+                  <Text style={[styles.contactText, styles.linkText]}>{formatContactInfo(restaurant.phone)}</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+            {(!restaurant.address || !isRealData(restaurant.address)) && 
+             (!restaurant.website || !isRealData(restaurant.website)) && 
+             (!restaurant.phone || !isRealData(restaurant.phone)) && (
+              <Text style={styles.menuItemText}>No contact information available</Text>
+            )}
             <View style={styles.bottomPadding} />
           </View>
         </Animated.ScrollView>
@@ -222,7 +285,14 @@ export default function RestaurantDetailScreen() {
             variant={isSaved ? "secondary" : "primary"} 
             onPress={handleSave} 
             style={styles.saveButton} 
-            icon={isSaved ? "bookmark" : "bookmark-outline"}
+            icon={
+              <Ionicons 
+                name={isSaved ? "bookmark" : "bookmark-outline"} 
+                size={20} 
+                color="white" 
+                style={{ marginRight: 8 }} 
+              />
+            }
           />
         </View>
       </View>

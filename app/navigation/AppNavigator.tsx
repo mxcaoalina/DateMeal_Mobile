@@ -9,13 +9,17 @@ import ChatScreen from '../screens/chat/ChatScreen';
 import RestaurantDetailScreen from '../screens/restaurant/RestaurantDetailScreen';
 import SavedRestaurantsScreen from '../screens/restaurant/SavedRestaurantsScreen';
 import PreferencesScreen from '../screens/preferences/PreferencesScreen';
+import { Restaurant } from '../types/restaurant';
 
 // Define the types for our navigation parameters
 export type RootStackParamList = {
   Welcome: undefined;
   Onboarding: undefined;
   Home: undefined;
-  Chat: undefined;
+  Chat: {
+    initialRecommendations?: Restaurant[];
+    initialResponse?: string;
+  };
   RestaurantDetail: { id: string };
   SavedRestaurants: undefined;
   Preferences: undefined;

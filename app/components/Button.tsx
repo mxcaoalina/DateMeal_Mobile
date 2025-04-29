@@ -7,7 +7,8 @@ import {
   ViewStyle, 
   TextStyle, 
   ActivityIndicator,
-  Animated 
+  Animated,
+  View
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import theme from '../theme';
@@ -57,50 +58,6 @@ export default function Button({
     }).start();
   };
   
-  // Determine button styles based on variant and size
-  const getButtonContainer = () => {
-    const baseStyle = [
-      styles.button,
-      styles[`${size}Button`],
-      !fullWidth && styles.defaultWidth,
-      fullWidth && styles.fullWidth,
-      props.disabled && styles.disabled,
-      style
-    ];
-    
-    // Return gradient container for primary and secondary variants
-    if (variant === 'primary' || variant === 'secondary') {
-      return (
-        <LinearGradient
-          colors={variant === 'primary' 
-            ? ['#333333', '#1a1a1a']
-            : ['#757575', '#606060']
-          }
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={baseStyle}
-        >
-          {renderContent()}
-        </LinearGradient>
-      );
-    }
-    
-    // Return regular container for outline, ghost, and onboarding variants
-    return (
-      <Pressable
-        style={[
-          ...baseStyle,
-          variant === 'outline' && styles.outlineButton,
-          variant === 'ghost' && styles.ghostButton,
-          variant === 'onboarding' && styles.onboardingButton,
-        ]}
-        {...props}
-      >
-        {renderContent()}
-      </Pressable>
-    );
-  };
-  
   // Render button content (text, loading indicator, icon)
   const renderContent = () => (
     <>
@@ -129,17 +86,74 @@ export default function Button({
       )}
     </>
   );
+
+  const baseStyle = [
+    styles.button,
+    styles[`${size}Button`],
+    !fullWidth && styles.defaultWidth,
+    fullWidth && styles.fullWidth,
+    props.disabled && styles.disabled,
+    style
+  ];
   
   return (
     <Animated.View style={{ transform: [{ scale: animatedScale }] }}>
-      <Pressable
-        {...props}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-        android_ripple={{ color: 'rgba(0, 0, 0, 0.1)', borderless: false }}
-      >
-        {getButtonContainer()}
-      </Pressable>
+      {variant === 'primary' || variant === 'secondary' ? (
+        <Pressable
+          {...props}
+          onPressIn={handlePressIn}
+          onPressOut={handlePressOut}
+          android_ripple={{ color: 'rgba(0, 0, 0, 0.1)', borderless: false }}
+        >
+          <LinearGradient
+            colors={variant === 'primary' 
+              ? ['#333333', '#1a1a1a']
+              : ['#757575', '#606060']
+            }
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={baseStyle}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
+              {loading ? (
+                <ActivityIndicator 
+                  size="small" 
+                  color="white" 
+                />
+              ) : (
+                <>
+                  {icon && iconPosition === 'left' && icon}
+                  <Text
+                    style={[
+                      styles.text,
+                      styles[`${size}Text`],
+                      textStyle
+                    ]}
+                  >
+                    {title}
+                  </Text>
+                  {icon && iconPosition === 'right' && icon}
+                </>
+              )}
+            </View>
+          </LinearGradient>
+        </Pressable>
+      ) : (
+        <Pressable
+          {...props}
+          onPressIn={handlePressIn}
+          onPressOut={handlePressOut}
+          android_ripple={{ color: 'rgba(0, 0, 0, 0.1)', borderless: false }}
+          style={[
+            ...baseStyle,
+            variant === 'outline' && styles.outlineButton,
+            variant === 'ghost' && styles.ghostButton,
+            variant === 'onboarding' && styles.onboardingButton,
+          ]}
+        >
+          {renderContent()}
+        </Pressable>
+      )}
     </Animated.View>
   );
 }

@@ -18,13 +18,16 @@ export const fastApiAdapter = {
   }> => {
     try {
       const requestData: AdviseRequest = {
-        vibe: preferences.mood || preferences.ambience,
+        vibe: preferences.mood,
+        ambience: preferences.ambience,
         partySize: preferences.partySize?.toString(),
         budget: preferences.priceRange,
         cuisines: preferences.cuisines,
         location: typeof preferences.location === 'string'
           ? preferences.location
-          : preferences.location?.city
+          : preferences.location?.city,
+        dietaryRestrictions: preferences.dietaryRestrictions,
+        absoluteNogos: preferences.absoluteNogos
       };
 
       console.log('🔍 Sending preferences to API:', JSON.stringify(requestData, null, 2));
@@ -72,13 +75,16 @@ export const fastApiAdapter = {
   }> => {
     try {
       const requestData: AdviseRequest = {
-        vibe: preferences.mood || preferences.ambience,
+        vibe: preferences.mood,
+        ambience: preferences.ambience,
         partySize: preferences.partySize?.toString(),
         budget: preferences.priceRange,
         cuisines: preferences.cuisines,
         location: typeof preferences.location === 'string'
           ? preferences.location
-          : preferences.location?.city
+          : preferences.location?.city,
+        dietaryRestrictions: preferences.dietaryRestrictions,
+        absoluteNogos: preferences.absoluteNogos
       };
 
       console.log('🔍 Getting recommendations with preferences:', JSON.stringify(requestData, null, 2));

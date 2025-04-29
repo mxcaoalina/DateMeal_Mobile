@@ -16,10 +16,13 @@ const api = axios.create({
 
 export interface AdviseRequest {
   vibe?: string;
+  ambience?: string;
   partySize?: string;
   budget?: string;
   cuisines?: string[];
   location?: string;
+  dietaryRestrictions?: string[];
+  absoluteNogos?: string[];
 }
 
 interface AdviseResponse {

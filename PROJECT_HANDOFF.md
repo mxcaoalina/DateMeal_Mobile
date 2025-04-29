@@ -655,6 +655,238 @@ To implement this enhancement, follow these steps:
 
 3. Start the app and test the recommendation flow with different combinations of preferences.
 
+## Restaurant Detail Enhancement: Dynamic Menu Preview
+
+⚠️ **IMPROVEMENT NEEDED**: The menu preview section in the restaurant detail screen currently displays fixed/static content rather than actual menu items for each restaurant.
+
+### Current Limitation
+
+The restaurant detail screen includes a menu preview section, but this is currently implemented with static content rather than using the AI agent to fetch or generate actual menu items specific to each restaurant. This creates an inconsistent user experience, as the recommendations are dynamically generated but the menu previews do not match the actual restaurants being recommended.
+
+### Required Changes
+
+The following changes should be made to improve the menu preview functionality:
+
+1. **Update the Restaurant model** to include menu items:
+   ```python
+   class Restaurant(BaseModel):
+       # Existing fields...
+       menuItems: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
+   ```
+
+2. **Enhance the OpenAI prompt** to include menu item generation:
+   ```python
+   # Add to the existing prompt
+   Also provide 3-5 popular menu items for each restaurant in this format:
+   - Name: [item name]
+   - Description: [brief description]
+   - Price: [price in $]
+   - Category: [appetizer/main/dessert/etc]
+   ```
+
+3. **Update the `get_recommendation` function** to process and include menu items:
+   ```python
+   # Process menu items from the OpenAI response
+   menu_items = []
+   if "menuItems" in restaurant_data:
+       menu_items = restaurant_data["menuItems"]
+   
+   restaurant = Restaurant(
+       # Existing fields...
+       menuItems=menu_items
+   )
+   ```
+
+4. **Modify the frontend Restaurant type** in `app/types/restaurant.ts`:
+   ```typescript
+   export interface MenuItem {
+     name: string;
+     description: string;
+     price: string;
+     category: string;
+   }
+   
+   export interface Restaurant {
+     // Existing fields...
+     menuItems?: MenuItem[];
+   }
+   ```
+
+5. **Update the RestaurantDetailScreen** to dynamically display menu items:
+   ```typescript
+   // In RestaurantDetailScreen.tsx
+   const renderMenuItems = () => {
+     if (!restaurant.menuItems || restaurant.menuItems.length === 0) {
+       return (
+         <View style={styles.noMenuContainer}>
+           <Text style={styles.noMenuText}>Menu information not available</Text>
+         </View>
+       );
+     }
+     
+     return (
+       <View style={styles.menuContainer}>
+         {restaurant.menuItems.map((item, index) => (
+           <View key={index} style={styles.menuItem}>
+             <View style={styles.menuItemHeader}>
+               <Text style={styles.menuItemName}>{item.name}</Text>
+               <Text style={styles.menuItemPrice}>{item.price}</Text>
+             </View>
+             <Text style={styles.menuItemDescription}>{item.description}</Text>
+             <Text style={styles.menuItemCategory}>{item.category}</Text>
+           </View>
+         ))}
+       </View>
+     );
+   };
+   ```
+
+### Implementation Plan
+
+To implement this enhancement, follow these steps:
+
+#### Step 1: Backend Updates
+
+1. Modify the `Restaurant` model in `backend-python/main.py` to include the `menuItems` field:
+   ```python
+   class Restaurant(BaseModel):
+       # Existing fields...
+       menuItems: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
+   ```
+
+2. Update the OpenAI prompt in the `generate_azure_openai_recommendation` function to request menu items:
+   ```python
+   # Add this to the existing prompt
+   Also provide 3-5 popular menu items for each restaurant in this format:
+   - Name: [item name]
+   - Description: [brief description]
+   - Price: [price in $]
+   - Category: [appetizer/main/dessert/etc]
+   ```
+
+3. In the `get_recommendation` function, extract and process menu items from the OpenAI response:
+   ```python
+   # If we got restaurants from Azure OpenAI, use the first one
+   if restaurants and len(restaurants) > 0:
+       restaurant_data = restaurants[0]
+       
+       # Process menu items if available
+       menu_items = []
+       if "menuItems" in restaurant_data:
+           menu_items = restaurant_data["menuItems"]
+       else:
+           # Generate some basic menu items based on cuisine
+           menu_items = [
+               {
+                   "name": f"{cuisine.capitalize()} Special",
+                   "description": f"Chef's special {cuisine} dish",
+                   "price": "$" + str(random.randint(15, 30)),
+                   "category": "Main"
+               },
+               {
+                   "name": f"Traditional {cuisine.capitalize()} Appetizer",
+                   "description": f"Classic {cuisine} starter",
+                   "price": "$" + str(random.randint(8, 15)),
+                   "category": "Appetizer"
+               }
+           ]
+       
+       # Include menu items in the restaurant object
+       restaurant = Restaurant(
+           # Existing fields...
+           menuItems=menu_items
+       )
+   ```
+
+#### Step 2: Frontend Updates
+
+1. Update the `Restaurant` interface in `app/types/restaurant.ts`:
+   ```typescript
+   export interface MenuItem {
+     name: string;
+     description: string;
+     price: string;
+     category: string;
+   }
+   
+   export interface Restaurant {
+     // Existing fields...
+     menuItems?: MenuItem[];
+   }
+   ```
+
+2. Modify the `RestaurantDetailScreen.tsx` to display dynamic menu items:
+   ```typescript
+   // Add a section for menu items
+   const renderMenuSection = () => {
+     return (
+       <View style={styles.section}>
+         <Text style={styles.sectionTitle}>Popular Menu Items</Text>
+         {renderMenuItems()}
+       </View>
+     );
+   };
+   
+   // Function to render individual menu items
+   const renderMenuItems = () => {
+     if (!restaurant.menuItems || restaurant.menuItems.length === 0) {
+       return (
+         <View style={styles.noMenuContainer}>
+           <Text style={styles.noMenuText}>Menu information not available</Text>
+         </View>
+       );
+     }
+     
+     return (
+       <View style={styles.menuContainer}>
+         {restaurant.menuItems.map((item, index) => (
+           <View key={index} style={styles.menuItem}>
+             <View style={styles.menuItemHeader}>
+               <Text style={styles.menuItemName}>{item.name}</Text>
+               <Text style={styles.menuItemPrice}>{item.price}</Text>
+             </View>
+             <Text style={styles.menuItemDescription}>{item.description}</Text>
+             <Text style={styles.menuItemCategory}>{item.category}</Text>
+           </View>
+         ))}
+       </View>
+     );
+   };
+   ```
+
+3. Add the menu section to the main render function:
+   ```typescript
+   return (
+     <ScrollView>
+       {/* Existing sections */}
+       {renderHeaderSection()}
+       {renderInfoSection()}
+       {renderHighlightsSection()}
+       
+       {/* New menu section */}
+       {renderMenuSection()}
+       
+       {/* Other sections */}
+       {renderContactSection()}
+     </ScrollView>
+   );
+   ```
+
+#### Step 3: Testing
+
+1. Start the backend server with the updated code
+2. Test the `/advise` endpoint to verify it returns menu items
+3. Run the app and navigate to the restaurant detail screen to ensure menu items are displayed correctly
+4. Test with different restaurant types to ensure menu items are appropriate for each cuisine
+
+### Expected Benefits
+
+Implementing these changes will:
+- Provide users with actual menu previews for recommended restaurants
+- Create a more consistent user experience between recommendations and details
+- Give users more practical information to make dining decisions
+- Make the app feel more comprehensive and useful
+
 ## Project Structure
 
 ### Frontend (React Native)
@@ -766,17 +998,23 @@ python3 -m uvicorn main:app --host 0.0.0.0 --port 8001 --reload
    - Implement "Save to Favorites" functionality
    - Add map integration for directions
 
-2. **Improve Chat Experience**
+2. **Add Dynamic Menu Preview** ⚠️ **HIGH PRIORITY**
+   - Update the restaurant detail screen to display actual menu items 
+   - Enhance the backend to generate menu items using AI
+   - Ensure menu items match the restaurant's cuisine and style
+   - See the "Restaurant Detail Enhancement" section for implementation details
+
+3. **Improve Chat Experience**
    - Add conversation history persistence
    - Implement typing indicators
    - Add ability to refine recommendations
 
-3. **Enhance UI/UX**
+4. **Enhance UI/UX**
    - Add animations for smoother transitions
    - Implement skeleton loaders during API calls
    - Add pull-to-refresh functionality
 
-4. **Testing**
+5. **Testing**
    - Add unit tests for key components
    - Implement integration tests for API services
    - Test on multiple device sizes and platforms
@@ -1009,7 +1247,3 @@ For any questions about the implementation details, please contact [Your Name/Em
      env: process.env.ENV || "development",
    },
    ```
-
----
-
-Good luck with the remaining development! The foundation is solid, and the app is ready for the next stage of enhancements.

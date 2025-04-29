@@ -1,6 +1,17 @@
 /**
  * Interface for Restaurant data structure
  */
+
+/**
+ * Interface for menu item
+ */
+export interface MenuItem {
+  name: string;
+  description: string;
+  price: string;
+  category: string;
+}
+
 export interface Restaurant {
   id: string;
   name: string;
@@ -24,6 +35,7 @@ export interface Restaurant {
   }[];
   highlights?: string[];
   reasonsToRecommend: string[];
+  menuItems?: MenuItem[];
 }
 
 /**

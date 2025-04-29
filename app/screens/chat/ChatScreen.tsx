@@ -27,7 +27,7 @@ import { RootStackParamList } from '../../navigation/AppNavigator';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import fastApiAdapter from '../../services/fastApiAdapter';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getApiBaseUrl } from '../../utils/networkUtils';
+import { RouteProp } from '@react-navigation/native';
 
 interface ChatMessage {
   id: string;
@@ -56,7 +56,8 @@ const MessageBubble = ({ message }: { message: ChatMessage }) => {
   );
 };
 
-export default function ChatScreen({ route }) {
+type ChatScreenRouteProp = RouteProp<RootStackParamList, 'Chat'>;
+export default function ChatScreen({ route }: { route: ChatScreenRouteProp }) {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const preferences = usePreferences();
   const initialRecommendations = route.params?.initialRecommendations;
@@ -87,7 +88,7 @@ export default function ChatScreen({ route }) {
   };
 
   useEffect(() => {
-    const messages = [];
+    const messages: ChatMessage[] = [];
     
     if (initialResponse) {
       messages.push({
@@ -106,11 +107,8 @@ export default function ChatScreen({ route }) {
     }
     
     setMessages(messages);
-    
-    if (initialRecommendations?.length > 0) {
-      setRecommendations(initialRecommendations);
-    }
-  }, [initialResponse, initialRecommendations]);
+    setRecommendations(initialRecommendations ?? []);
+}, [initialResponse, initialRecommendations]);
 
   useEffect(() => {
     setTimeout(() => {
@@ -198,27 +196,6 @@ export default function ChatScreen({ route }) {
   const handleBack = () => navigation.goBack();
   const handleViewRestaurant = (id: string) => navigation.navigate('RestaurantDetail', { id });
 
-  const testApiConnection = async () => {
-    try {
-      console.log('🧪 Testing API connection...');
-      const response = await fetch(`${getApiBaseUrl()}/health`, {
-        method: 'GET',
-      });
-      
-      if (response.ok) {
-        const data = await response.text();
-        console.log('✅ API connection successful:', data);
-        Alert.alert('API Connection Successful', `The server responded: ${data}`);
-      } else {
-        console.log('❌ API connection failed with status:', response.status);
-        Alert.alert('API Connection Failed', `Status code: ${response.status}`);
-      }
-    } catch (error: any) {
-      console.error('❌ API connection test failed:', error);
-      Alert.alert('API Connection Test Failed', `Error: ${error.message}`);
-    }
-  };
-
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={theme.colors.background} />
@@ -278,34 +255,113 @@ export default function ChatScreen({ route }) {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
-
-      <Button 
-        title="Test API Connection" 
-        onPress={testApiConnection} 
-        color="#007AFF"
-      />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: theme.colors.background },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: theme.spacing.lg, paddingVertical: theme.spacing.md, borderBottomWidth: 1, borderBottomColor: theme.colors.gray[200] },
-  backButton: { padding: theme.spacing.xs },
-  headerTitle: { fontSize: theme.fontSizes.lg, fontWeight: '600', color: theme.colors.text },
-  messageContainer: { flex: 1, paddingHorizontal: theme.spacing.lg },
-  messageContent: { paddingTop: theme.spacing.md, paddingBottom: theme.spacing.xl },
-  messageBubble: { maxWidth: '80%', paddingHorizontal: theme.spacing.md, paddingVertical: theme.spacing.sm, borderRadius: theme.borderRadius.default, marginBottom: theme.spacing.md },
-  userBubble: { alignSelf: 'flex-end', backgroundColor: theme.colors.primary },
-  assistantBubble: { alignSelf: 'flex-start', backgroundColor: theme.colors.gray[200] },
-  messageText: { fontSize: theme.fontSizes.md, lineHeight: theme.fontSizes.md * 1.4 },
-  userText: { color: '#FFFFFF' },
-  assistantText: { color: theme.colors.text },
-  loadingContainer: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', padding: theme.spacing.sm, backgroundColor: theme.colors.gray[100], borderRadius: theme.borderRadius.default, marginBottom: theme.spacing.md },
-  loadingText: { marginLeft: theme.spacing.sm, fontSize: theme.fontSizes.sm, color: theme.colors.textSecondary },
-  recommendationsContainer: { marginTop: theme.spacing.md, marginBottom: theme.spacing.xl },
-  inputContainer: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: theme.spacing.lg, paddingVertical: theme.spacing.md, borderTopWidth: 1, borderTopColor: theme.colors.gray[200], backgroundColor: theme.colors.background },
-  input: { flex: 1, backgroundColor: theme.colors.gray[100], borderRadius: 20, paddingHorizontal: theme.spacing.md, paddingTop: 10, paddingBottom: 10, fontSize: theme.fontSizes.md, color: theme.colors.text, maxHeight: 100 },
-  sendButton: { marginLeft: theme.spacing.md, backgroundColor: theme.colors.primary, width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
-  disabledButton: { backgroundColor: theme.colors.gray[300] }
+  container: { 
+    flex: 1, 
+    backgroundColor: theme.colors.background 
+  },
+  header: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    paddingHorizontal: theme.spacing.lg, 
+    paddingVertical: theme.spacing.md, 
+    borderBottomWidth: 1, 
+    borderBottomColor: theme.colors.gray[200] 
+  },
+  backButton: { 
+    padding: theme.spacing.xs 
+  },
+  headerTitle: { 
+    fontSize: theme.fontSizes.lg, 
+    fontWeight: '600', 
+    color: theme.colors.text 
+  },
+  messageContainer: { 
+    flex: 1, 
+    paddingHorizontal: theme.spacing.lg 
+  },
+  messageContent: { 
+    paddingTop: theme.spacing.md, 
+    paddingBottom: theme.spacing.xl 
+  },
+  messageBubble: { 
+    maxWidth: '80%', 
+    paddingHorizontal: theme.spacing.md, 
+    paddingVertical: theme.spacing.sm, 
+    borderRadius: theme.borderRadius.default, 
+    marginBottom: theme.spacing.md 
+  },
+  userBubble: { 
+    alignSelf: 'flex-end', 
+    backgroundColor: theme.colors.primary 
+  },
+  assistantBubble: { 
+    alignSelf: 'flex-start', 
+    backgroundColor: theme.colors.gray[200] 
+  },
+  messageText: { 
+    fontSize: theme.fontSizes.md, 
+    lineHeight: theme.fontSizes.md * 1.4 
+  },
+  userText: { 
+    color: '#FFFFFF' 
+  },
+  assistantText: { 
+    color: theme.colors.text 
+  },
+  loadingContainer: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    alignSelf: 'flex-start', 
+    padding: theme.spacing.sm, 
+    backgroundColor: theme.colors.gray[100], 
+    borderRadius: theme.borderRadius.default, 
+    marginBottom: theme.spacing.md 
+  },
+  loadingText: { 
+    marginLeft: theme.spacing.sm, 
+    fontSize: theme.fontSizes.sm, 
+    color: theme.colors.textSecondary 
+  },
+  recommendationsContainer: { 
+    marginTop: theme.spacing.md, 
+    marginBottom: theme.spacing.xl 
+  },
+  inputContainer: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    paddingHorizontal: theme.spacing.lg, 
+    paddingVertical: theme.spacing.md, 
+    borderTopWidth: 1, 
+    borderTopColor: theme.colors.gray[200], 
+    backgroundColor: theme.colors.background 
+  },
+  input: { 
+    flex: 1, 
+    backgroundColor: theme.colors.gray[100], 
+    borderRadius: 20, 
+    paddingHorizontal: theme.spacing.md, 
+    paddingTop: 10, 
+    paddingBottom: 10, 
+    fontSize: theme.fontSizes.md, 
+    color: theme.colors.text,
+    maxHeight: 100 
+  },
+  sendButton: { 
+    marginLeft: theme.spacing.md, 
+    backgroundColor: theme.colors.primary,
+    width: 40, 
+    height: 40, 
+    borderRadius: 20, 
+    justifyContent: 'center', 
+    alignItems: 'center' 
+  },
+  disabledButton: { 
+    backgroundColor: theme.colors.gray[300] 
+  }
 });

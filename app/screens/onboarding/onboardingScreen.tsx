@@ -10,6 +10,7 @@ import theme from '../../theme';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../navigation/AppNavigator';
 import { restaurantApiService } from '../../services/restaurantApiService';
+import { Restaurant } from '../../types/restaurant';
 
 type OnboardingNavigationProp = StackNavigationProp<RootStackParamList, 'Onboarding'>;
 
@@ -43,9 +44,9 @@ export default function OnboardingScreen() {
   };
 
   const handleExitToHome = () => {
-    navigation.navigate('Home');
+    navigation.navigate({ name: 'Home', params: undefined });
   };
-
+  
   const handleNextStep = (value: string) => {
     setSelectedOption(value);
 
@@ -71,11 +72,11 @@ export default function OnboardingScreen() {
 
       const { sessionPreferences } = preferences;
       const apiPreferences = {
-        partySize: sessionPreferences.partySize,
-        mood: sessionPreferences.mood,
-        ambience: sessionPreferences.ambience,
-        budget: sessionPreferences.budget,
-        cuisines: sessionPreferences.cuisinePreferences,
+        partySize: sessionPreferences.partySize ?? undefined,
+        mood: sessionPreferences.mood ?? undefined,
+        ambience: sessionPreferences.ambience ?? undefined,
+        budget: sessionPreferences.budget ?? undefined,
+        cuisines: sessionPreferences.cuisinePreferences ?? [],
         location: location
       };
 
@@ -83,15 +84,15 @@ export default function OnboardingScreen() {
       
       if (result?.recommendations?.length > 0) {
         navigation.navigate('Chat', { 
-          initialRecommendations: result.recommendations,
-          initialResponse: result.reasoning
-        });
+          initialRecommendations: result.recommendations as Restaurant[], 
+          initialResponse: result?.reasoning ?? "Let's explore together!"
+        });        
       } else {
-        navigation.navigate('Chat');
+        navigation.navigate({name:'Chat', params: {} });
       }
     } catch (error) {
       console.error('Error getting recommendations:', error);
-      navigation.navigate('Chat');
+      navigation.navigate({name:'Chat', params: {} });
     } finally {
       setIsLoading(false);
     }
@@ -347,24 +348,26 @@ const styles = StyleSheet.create({
   },
   footer: {
     alignItems: 'center',
-    paddingBottom: theme.spacing.md,
+    marginBottom: theme.spacing.md,
   },
   exitContainer: {
-    paddingHorizontal: theme.spacing.lg,
-    paddingBottom: theme.spacing.lg,
+    // paddingHorizontal: theme.spacing.lg,
+    // paddingBottom: theme.spacing.lg,
   },
   exitDivider: {
     height: 1,
     backgroundColor: theme.colors.gray[200],
-    marginVertical: theme.spacing.md,
+    // marginVertical: theme.spacing.md,
   },
   exitToHomeButton: {
     alignSelf: 'center',
-    paddingVertical: theme.spacing.xs,
-    paddingHorizontal: theme.spacing.md,
+    paddingTop: theme.spacing.lg,
+    // paddingVertical: theme.spacing.xs,
+    // paddingHorizontal: theme.spacing.md,
   },
   exitToHomeText: {
-    fontSize: theme.fontSizes.sm,
+    fontSize: theme.fontSizes.md,
     color: theme.colors.primary,
+    fontWeight: '500',
   },
 });
