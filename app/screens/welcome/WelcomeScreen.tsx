@@ -71,13 +71,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background,
-    paddingHorizontal: theme.spacing.lg,
   },
   content: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingTop: theme.spacing.xl,
+    paddingHorizontal: theme.spacing.xl,
   },
   iconContainer: {
     width: 60,
@@ -101,8 +101,8 @@ const styles = StyleSheet.create({
     color: theme.colors.text,
   },
   formContainer: {
-    width: '100%',
-    maxWidth: 400,
+    width: '85%',
+    maxWidth: 350,
     marginBottom: theme.spacing.xxl,
   },
   subtitle: {
@@ -135,6 +135,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: theme.spacing.sm,
+    width: '90%',
+    alignSelf: 'center',
   },
   buttonText: {
     color: '#FFFFFF',
