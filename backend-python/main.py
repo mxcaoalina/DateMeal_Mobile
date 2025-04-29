@@ -15,6 +15,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/")
+async def root():
+    return {"message": "Backend is running"}
+
 app.include_router(advise.router)
 app.include_router(health.router)
 app.include_router(refine.router)
