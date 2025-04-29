@@ -35,7 +35,7 @@ jobs:
       # Optional: Add step to run tests here (PyTest, Django test suites, etc.)
 
       - name: Zip FastAPI backend from subfolder
-        run: cd backend-python && zip -r ../release.zip .
+        run: cd backend_python && zip -r ../release.zip .
 
 
       - name: Upload artifact for deployment jobs
