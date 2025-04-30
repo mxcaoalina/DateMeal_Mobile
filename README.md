@@ -75,7 +75,35 @@ backend-python/
 ---
 
 
-<pre> ## System Flow Overview ```text +--------------------+ +--------------------+ | React Native App | | AsyncStorage | |--------------------| |--------------------| | - User Onboarding |<------->| - Preferences | | - Chat Interface | | - Cached Results | +--------+-----------+ +---------^----------+ | | | HTTP Request | v | +--------+-----------+ +---------+----------+ | FastAPI | | Azure OpenAI (GPT) | |--------------------| |--------------------| | - Receives input | | - Chat Completion | | - Formats prompt |-------->| - Returns JSON | | - Handles fallback | +--------------------+ +--------+-----------+ | v +--------------------+ +--------------------+ | Bing Search API |-------->| Restaurant Data | |--------------------| | (Structured JSON) | | - Image lookup | +--------------------+ | - URL enrichment | +--------------------+ ``` </pre>
+## System Flow Overview
+
+```
++--------------------+         +--------------------+
+|  React Native App  |         |   AsyncStorage     |
+|--------------------|         |--------------------|
+| - User Onboarding  |<------->| - Preferences      |
+| - Chat Interface   |         | - Cached Results   |
++--------+-----------+         +---------^----------+
+         |                               |
+         | HTTP Request                  |
+         v                               |
++--------+-----------+         +---------+----------+
+|       FastAPI      |         | Azure OpenAI (GPT) |
+|--------------------|         |--------------------|
+| - Receives input   |         | - Chat Completion  |
+| - Formats prompt   |-------->| - Returns JSON     |
+| - Handles fallback |         +--------------------+
++--------+-----------+                   
+         |                                   
+         v                                   
++--------------------+         +--------------------+
+|  Bing Search API   |-------->|  Restaurant Data   |
+|--------------------|         | (Structured JSON)  |
+| - Image lookup     |         +--------------------+
+| - URL enrichment   |
++--------------------+
+```
+
 
 ---
 
