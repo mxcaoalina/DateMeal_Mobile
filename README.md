@@ -151,32 +151,32 @@ It uses dynamic input from the user (e.g., "Romantic Italian in Brooklyn") to po
 ## Demo
 
 <div align="center">
-  <img src="assets/home.png" alt="Home Screen" width="200"/>
+  <img src="assets/home.png" alt="Home Screen" width="250"/>
   <p><b>Home Screen</b>: Displays a greeting, shows saved restaurants and quick actions like chatting or editing preferences.</p>
 </div>
 
 <div align="center">
-  <img src="assets/preferences.png" alt="Preferences Page" width="300"/>
+  <img src="assets/preferences.png" alt="Preferences Page" width="250"/>
   <p><b>Preferences Page</b>: Update dietary restrictions, must-not-haves, and more to refine future results.</p>
 </div>
 
 <div align="center">
-  <img src="assets/onboarding.png" alt="Onboarding Flow" width="300"/>
+  <img src="assets/onboarding.png" alt="Onboarding Flow" width="250"/>
   <p><b>Onboarding Flow</b>: Users specify vibe, cuisine, party size, budget, dietary needs, and no-gos before receiving tailored results.</p>
 </div>
 
 <div align="center">
-  <img src="assets/chat.png" alt="Chat Assistant" width="300"/>
+  <img src="assets/chat.png" alt="Chat Assistant" width="250"/>
   <p><b>Chat Assistant</b>: Conversational UI lets users ask for suggestions and receive real-time responses from the AI agent.</p>
 </div>
 
 <div align="center">
-  <img src="assets/refine-chat.png" alt="Refine Recommendations" width="300"/>
+  <img src="assets/refine-chat.png" alt="Refine Recommendations" width="250"/>
   <p><b>Refine Recommendations</b>: After receiving suggestions, users can refine results by asking the agent to adjust based on new criteria.</p>
 </div>
 
 <div align="center">
-  <img src="assets/restaurant-detail.png" alt="Restaurant Detail View" width="300"/>
+  <img src="assets/restaurant-detail.png" alt="Restaurant Detail View" width="250"/>
   <p><b>Restaurant Detail View</b>: Expanded view of a selected restaurant, including highlights, contact info, hours, and curated menu.</p>
 </div>
 
