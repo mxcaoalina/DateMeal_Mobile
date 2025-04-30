@@ -224,5 +224,5 @@ Scan QR code to run on mobile or simulator.
 
 ---
 
-© AI Agent Hackathon 2025 · Team: Mingxi Cao, Ziqun Liu & Raja
+© AI Agent Hackathon 2025 · Team: mxcaoalina, ziqun-liu, RajasekharwhY
 
