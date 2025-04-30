@@ -150,33 +150,33 @@ It uses dynamic input from the user (e.g., "Romantic Italian in Brooklyn") to po
 
 ## Demo
 
-<figure style="text-align:center;">
-  <img src="assets/home.png" alt="Home Screen" width="400"/>
+<div align="center">
+  <img src="assets/home.png" alt="Home Screen" width="300"/>
   <figcaption><strong>Home Screen</strong>: Displays a greeting, shows saved restaurants and quick actions like chatting or editing preferences.</figcaption>
 </figure>
 
-<figure style="text-align:center;">
-  <img src="assets/preferences.png" alt="Preferences Page" width="400"/>
+<div align="center">
+  <img src="assets/preferences.png" alt="Preferences Page" width="300"/>
   <figcaption><strong>Preferences Page</strong>: Update dietary restrictions, must-not-haves, and more to refine future results.</figcaption>
 </figure>
 
-<figure style="text-align:center;">
-  <img src="assets/onboarding.png" alt="Onboarding Flow" width="400"/>
+<div align="center">
+  <img src="assets/onboarding.png" alt="Onboarding Flow" width="300"/>
   <figcaption><strong>Onboarding Flow</strong>: Users specify vibe, cuisine, party size, budget, dietary needs, and no-gos before receiving tailored results.</figcaption>
 </figure>
 
-<figure style="text-align:center;">
-  <img src="assets/chat.png" alt="Chat Assistant" width="400"/>
+<div align="center">
+  <img src="assets/chat.png" alt="Chat Assistant" width="300"/>
   <figcaption><strong>Chat Assistant</strong>: Conversational UI lets users ask for suggestions and receive real-time responses from the AI agent.</figcaption>
 </figure>
 
-<figure style="text-align:center;">
-  <img src="assets/refine-chat.png" alt="Refine Recommendations" width="400"/>
+<div align="center">
+  <img src="assets/refine-chat.png" alt="Refine Recommendations" width="300"/>
   <figcaption><strong>Refine Recommendations</strong>: After receiving suggestions, users can refine results by asking the agent to adjust based on new criteria.</figcaption>
 </figure>
 
-<figure style="text-align:center;">
-  <img src="assets/restaurant-detail.png" alt="Restaurant Detail View" width="400"/>
+<div align="center">
+  <img src="assets/restaurant-detail.png" alt="Restaurant Detail View" width="300"/>
   <figcaption><strong>Restaurant Detail View</strong>: Expanded view of a selected restaurant, including highlights, contact info, hours, and curated menu.</figcaption>
 </figure>
 
