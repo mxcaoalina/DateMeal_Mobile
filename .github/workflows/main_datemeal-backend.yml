@@ -63,6 +63,13 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_24FF108956964AB397BE5528382AC765 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_20C521CC1CF040F6818DF9699433DF0D }}
 
+       - name: Set startup command for FastAPI
+        run: |
+          az webapp config set \
+            --name datemeal-backend \
+            --resource-group rg-mxcao_alina-3429_ai \
+            --startup-file "uvicorn main:app --host=0.0.0.0 --port=8000"
+
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         id: deploy-to-webapp
