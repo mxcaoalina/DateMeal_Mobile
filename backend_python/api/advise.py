@@ -85,28 +85,6 @@ async def get_recommendation(request: AdviseRequest):
                     }
                 ]
             
-            # Try to enrich with Bing Search data if Bing API key is available
-            # if BING_API_KEY:
-            #     logger.info(f"Attempting to enrich with Bing data for: {restaurant_data.get('name')}")
-            #     bing_data = await search_bing_for_restaurant(restaurant_data["name"], location)
-                
-            #     # If we got image data from Bing, use it
-            #     if bing_data.get("imageUrl"):
-            #         logger.info(f"Using Bing image: {bing_data['imageUrl']}")
-            #         restaurant_data["imageUrl"] = bing_data["imageUrl"]
-            #      else:
-            #         logger.warning("No image found from Bing")
-                
-            # If we got a website from Bing, use it
-            # if bing_data.get("url"):
-            #     logger.info(f"Using Bing URL: {bing_data['url']}")
-            #     restaurant_data["website"] = bing_data["url"]
-            # else:
-            #     logger.warning("No URL found from Bing")
-            # else:
-            #     logger.warning("Bing API key not available, skipping enrichment")
-            
-            # Generate a personalized response using the recommendation
             description_templates = [
                 "Looking for a {vibe} spot with {cuisine} cuisine in {location}? I have just the place for you: {name}! {description}",
                 "Based on your vibe for {vibe} and love for {cuisine}, you should definitely check out {name} in {location}! {description}",
@@ -203,6 +181,7 @@ async def get_recommendation(request: AdviseRequest):
         # Select a relevant image based on cuisine
         cuisine_sum = sum(ord(c) for c in cuisine)
         image_id = restaurant_image_ids[cuisine_sum % len(restaurant_image_ids)]
+        
         cuisine_keyword = cuisine.lower().replace(' ', '+')
         cuisine_image_url = f"https://source.unsplash.com/featured/?{cuisine_keyword},restaurant"
         

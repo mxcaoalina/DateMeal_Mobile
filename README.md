@@ -1,4 +1,8 @@
 # DateMeal Mobile App - Full Stack Documentation
+<p align="center">
+  <img src="assets/solution.png" alt="DateMeal App Banner" width="100%"/>
+</p>
+
 
 ---
 
@@ -8,7 +12,38 @@
 
 With a delightful onboarding experience, natural-language chat, and a sleek mobile UI, DateMeal guides users from selection to detail view—and even saves favorites. It uses Azure OpenAI (GPT-4o) to generate recommendations and optionally enriches them with real-world data via Bing Web Search Grounding.
 
-![Recommendation Flow](./assets/solution.png)
+---
+
+
+## Why It's Innovative
+- Uses **conversational AI** (Azure OpenAI) to recommend restaurants, instead of forms or filters.
+- Supports **real-time refinement** via follow-up chat.
+- Applies **Human-in-the-Loop design** for interactive, evolving suggestions.
+- Augments AI responses with **Bing Web Search** for real-world accuracy and visuals.
+
+---
+
+## Responsible AI
+
+- All AI-generated content is reviewed by the user before action—ensuring human oversight (Human-in-the-Loop).
+- User preferences and past interactions are stored locally using AsyncStorage to preserve privacy.
+- GPT-4o prompts are explicitly scoped to avoid biased, harmful, or sensitive content.
+- The app avoids storing personal data in the cloud and includes fallback logic to ensure safety in the event of AI errors.
+
+
+---
+
+## Real-World Use Case
+
+DateMeal solves a familiar but often frustrating problem: *“Where should we eat tonight?”* 
+
+By offering personalized suggestions based on context (budget, mood, vibe, etc.) via natural conversation, it removes friction from decision-making. We envision this tool being used by:
+- Couples planning a date night
+- Groups deciding on dinner while traveling
+- Users with dietary restrictions looking for safe dining options
+
+The mobile-first, chat-based experience fits seamlessly into users’ lives—like having a restaurant-savvy friend in your pocket.
+
 
 ---
 
@@ -145,12 +180,19 @@ The backend sends a structured system prompt with examples, instructing GPT-4o t
 - `menuItems` (array of dishes)
 - `highlights`, `website`, `location`
 
-It uses dynamic input from the user (e.g., "Romantic Italian in Brooklyn") to populate the prompt. If the response is malformed or missing, fallback handling is triggered.
+> **Example System Prompt**:
+>
+> You are a restaurant recommender AI. Based on the following user preferences, return 3 diverse restaurant suggestions in strict JSON format.
+> - Cuisine: Korean  
+> - Budget: $$  
+> - Mood: Cozy
 
+
+It uses dynamic input from the user (e.g., "Romantic Italian in Brooklyn") to populate the prompt. If the response is malformed or missing, fallback handling is triggered.
 
 ---
 
-## Demo
+## App Screens & Demo Walkthrough
 
 <div align="center">
   <img src="assets/home.png" alt="Home Screen" width="250"/>
