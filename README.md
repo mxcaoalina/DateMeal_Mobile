@@ -74,34 +74,8 @@ backend-python/
 
 ---
 
-## System Flow Overview
 
-
-+--------------------+         +--------------------+
-|  React Native App  |         |  AsyncStorage      |
-|--------------------|         |--------------------|
-| - User Onboarding  |<------->| - Preferences      |
-| - Chat Interface   |         | - Cached Results   |
-+--------+-----------+         +---------^----------+
-         |                               |
-         | HTTP Request                  |
-         v                               |
-+--------+-----------+         +---------+----------+
-|     FastAPI        |         |  Azure OpenAI (GPT)|
-|--------------------|         |--------------------|
-| - Receives input   |         | - Chat Completion  |
-| - Formats prompt   |-------->| - Returns JSON     |
-| - Handles fallback |         +--------------------+
-+--------+-----------+                   
-         |                                   
-         v                                   
-+--------+-----------+         +--------------------+
-| Bing Search API    |-------->|  Restaurant Data   |
-|--------------------|         |  (Structured JSON) |
-| - Image lookup     |         +--------------------+
-| - URL enrichment   |
-+--------------------+
-
+<pre> ## System Flow Overview ```text +--------------------+ +--------------------+ | React Native App | | AsyncStorage | |--------------------| |--------------------| | - User Onboarding |<------->| - Preferences | | - Chat Interface | | - Cached Results | +--------+-----------+ +---------^----------+ | | | HTTP Request | v | +--------+-----------+ +---------+----------+ | FastAPI | | Azure OpenAI (GPT) | |--------------------| |--------------------| | - Receives input | | - Chat Completion | | - Formats prompt |-------->| - Returns JSON | | - Handles fallback | +--------------------+ +--------+-----------+ | v +--------------------+ +--------------------+ | Bing Search API |-------->| Restaurant Data | |--------------------| | (Structured JSON) | | - Image lookup | +--------------------+ | - URL enrichment | +--------------------+ ``` </pre>
 
 ---
 
@@ -149,7 +123,12 @@ It uses dynamic input from the user (e.g., "Romantic Italian in Brooklyn") to po
 
 - **Backend**: Deployed to Azure App Service — [View Deployment](https://datemeal-backend-cga2d8fqfsctesh9.eastus2-01.azurewebsites.net/)
 - **Frontend**: Published via Expo EAS Update — [Expo Dashboard](https://expo.dev/accounts/mxcao_alina/projects/DateMealMobile)
-- **Production Base URL**: `https://expo.dev/accounts/mxcao_alina/projects/DateMealMobile`
+
+<p align="center">
+  <img src="assets/qr-code.svg" alt="QR Code to try the DateMeal app" width="200"/><br/>
+  <em>Scan to preview the latest DateMeal app</em>
+</p>
+
 
 ---
 
