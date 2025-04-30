@@ -145,6 +145,42 @@ The backend sends a structured system prompt with examples, instructing GPT-4o t
 
 It uses dynamic input from the user (e.g., "Romantic Italian in Brooklyn") to populate the prompt. If the response is malformed or missing, fallback handling is triggered.
 
+
+---
+
+## Demo
+
+<figure style="text-align:center;">
+  <img src="assets/home.png" alt="Home Screen" width="400"/>
+  <figcaption><strong>Home Screen</strong>: Displays a greeting, shows saved restaurants and quick actions like chatting or editing preferences.</figcaption>
+</figure>
+
+<figure style="text-align:center;">
+  <img src="assets/preferences.png" alt="Preferences Page" width="400"/>
+  <figcaption><strong>Preferences Page</strong>: Update dietary restrictions, must-not-haves, and more to refine future results.</figcaption>
+</figure>
+
+<figure style="text-align:center;">
+  <img src="assets/onboarding.png" alt="Onboarding Flow" width="400"/>
+  <figcaption><strong>Onboarding Flow</strong>: Users specify vibe, cuisine, party size, budget, dietary needs, and no-gos before receiving tailored results.</figcaption>
+</figure>
+
+<figure style="text-align:center;">
+  <img src="assets/chat.png" alt="Chat Assistant" width="400"/>
+  <figcaption><strong>Chat Assistant</strong>: Conversational UI lets users ask for suggestions and receive real-time responses from the AI agent.</figcaption>
+</figure>
+
+<figure style="text-align:center;">
+  <img src="assets/refine-chat.png" alt="Refine Recommendations" width="400"/>
+  <figcaption><strong>Refine Recommendations</strong>: After receiving suggestions, users can refine results by asking the agent to adjust based on new criteria.</figcaption>
+</figure>
+
+<figure style="text-align:center;">
+  <img src="assets/restaurant-detail.png" alt="Restaurant Detail View" width="400"/>
+  <figcaption><strong>Restaurant Detail View</strong>: Expanded view of a selected restaurant, including highlights, contact info, hours, and curated menu.</figcaption>
+</figure>
+
+
 ---
 
 ## Deployment
@@ -159,6 +195,7 @@ It uses dynamic input from the user (e.g., "Romantic Italian in Brooklyn") to po
 
 
 ---
+
 
 ## Running Locally
 
@@ -184,35 +221,6 @@ npx expo start
 ```
 
 Scan QR code to run on mobile or simulator.
-
----
-
-## Demo
-
-### Home Screen
-![Home Screen](./assets/home.png)  
-_Shows saved restaurants and quick actions like chatting or editing preferences._
-
-### Onboarding Flow
-![Onboarding](./assets/onboarding.png)  
-_Users specify vibe, cuisine, party size, budget, dietary needs, and no-gos before receiving tailored results._
-
-### Preference Screen
-![Preference Screen](./assets/preferences.png)  
-_Allows users to update their date meal preferences for better future recommendations._
-
-### Chat Interface
-![Chat Screen](./assets/chat.png)  
-_Conversational UI lets users ask for suggestions and receive real-time responses from the AI agent._
-
-### Refine Recommendations
-![Refine Chat](./assets/refine-chat.png)  
-_After receiving suggestions, users can refine results by asking the agent to adjust based on new criteria._
-
-### Restaurant Detail
-![Restaurant Detail](./assets/restaurant-detail.png)  
-_Expanded view of a selected restaurant, including highlights, contact info, hours, and curated menu._
-
 
 ---
 
