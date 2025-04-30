@@ -152,7 +152,7 @@ It uses dynamic input from the user (e.g., "Romantic Italian in Brooklyn") to po
 
 <div align="center">
   <img src="assets/home.png" alt="Home Screen" width="300"/>
-  <figcaption><strong>Home Screen</strong>: Displays a greeting, shows saved restaurants and quick actions like chatting or editing preferences.</figcaption>
+  <p><b>Home Screen:</b> Displays a greeting, shows saved restaurants and quick actions like chatting or editing preferences.</p>
 </figure>
 
 <div align="center">
