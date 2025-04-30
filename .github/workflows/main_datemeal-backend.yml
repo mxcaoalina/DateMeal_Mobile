@@ -37,7 +37,7 @@ jobs:
           name: python-app
           path: release.zip
 
-  deploy:
+    deploy:
     runs-on: ubuntu-latest
     needs: build
     environment:
@@ -63,7 +63,7 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_24FF108956964AB397BE5528382AC765 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_20C521CC1CF040F6818DF9699433DF0D }}
 
-       - name: Set startup command for FastAPI
+      - name: Set startup command for FastAPI
         run: |
           az webapp config set \
             --name datemeal-backend \
