@@ -8,6 +8,8 @@
 
 With a delightful onboarding experience, natural-language chat, and a sleek mobile UI, DateMeal guides users from selection to detail view—and even saves favorites. It uses Azure OpenAI (GPT-4o) to generate recommendations and optionally enriches them with real-world data via Bing Web Search Grounding.
 
+![Recommendation Flow](./assets/solution.png)
+
 ---
 
 ## Tech Stack
