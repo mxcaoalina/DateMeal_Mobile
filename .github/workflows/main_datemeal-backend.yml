@@ -67,15 +67,10 @@ jobs:
             --name datemeal-backend \
             --resource-group rg-mxcao_alina-3429_ai \
             --startup-file "uvicorn main:app --host=0.0.0.0 --port=8000"
-      
-      - name: Clean up Azure App Service wwwroot
-        run: |
-          curl -X DELETE "https://${{ secrets.AZURE_WEBAPP_NAME }}.scm.azurewebsites.net/api/vfs/site/wwwroot/" \
-          -u ${{ secrets.AZURE_DEPLOYMENT_USERNAME }}:${{ secrets.AZURE_DEPLOYMENT_PASSWORD }}
-
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         id: deploy-to-webapp
         with:
           app-name: 'datemeal-backend'
+          package: release.zip
