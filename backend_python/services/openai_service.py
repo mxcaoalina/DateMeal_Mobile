@@ -1,12 +1,46 @@
 from fastapi import APIRouter, HTTPException
 from models.schemas import AdviseRequest, AdviseResponse, Restaurant
-from services.openai_service import generate_azure_openai_recommendation
 from services.restaurant_data import RESTAURANT_DATA
 import logging
 import random
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+async def generate_azure_openai_recommendation(preferences: dict) -> list:
+    """
+    Generate restaurant recommendations using Azure OpenAI.
+    This is a placeholder function that returns sample data.
+    In a real implementation, this would call the Azure OpenAI API.
+    """
+    try:
+        # For demo purposes, return a sample restaurant
+        sample_restaurant = {
+            "name": "Sample Restaurant",
+            "cuisine": preferences.get("cuisines", ["italian"])[0].capitalize(),
+            "priceRange": preferences.get("budget", "$$"),
+            "location": preferences.get("location", "NYC"),
+            "rating": 4.5,
+            "description": "A delightful spot for your meal.",
+            "fullAddress": "123 Main St",
+            "phone": "(555) 123-4567",
+            "website": "https://www.sample.com",
+            "imageUrl": "https://source.unsplash.com/featured/?restaurant",
+            "openingHours": ["11:00 AM - 10:00 PM"] * 7,
+            "highlights": ["Great ambiance", "Friendly staff", "Delicious food"],
+            "menuItems": [
+                {
+                    "name": "Sample Dish",
+                    "description": "A delicious sample dish",
+                    "price": "$20",
+                    "category": "Main"
+                }
+            ]
+        }
+        return [sample_restaurant]
+    except Exception as e:
+        logger.error(f"Error generating recommendation: {str(e)}")
+        return None
 
 # Fallback image keywords
 restaurant_image_keywords = [
@@ -69,8 +103,8 @@ async def get_recommendation(request: AdviseRequest):
                 description=data.get("description", "A delightful spot for your meal."),
                 address=data.get("fullAddress", f"{random.randint(1,999)} Main St, {location}"),
                 phone=data.get("phone", f"[Sample] ({random.randint(200,999)}) {random.randint(100,999)}-{random.randint(1000,9999)}"),
-                clean_name = data["name"].lower().replace(" ", "").replace("'", "")
-                website = data.get("website", f"https://www.{clean_name}.com")
+                clean_name = data["name"].lower().replace(" ", "").replace("'", ""),
+                website = data.get("website", f"https://www.{clean_name}.com"),
                 imageUrl=data.get("imageUrl", default_image_url),
                 openingHours=data.get("openingHours", ["11:00 AM - 10:00 PM"] * 7),
                 highlights=data.get("highlights", [cuisine.capitalize(), vibe.capitalize(), location]),
