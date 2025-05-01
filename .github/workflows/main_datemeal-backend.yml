@@ -42,12 +42,22 @@ jobs:
           tenant-id: f81596cd-c622-488d-bb28-77b019541f23
           subscription-id: 6122595f-c233-4053-872e-9ee01d92a207
 
-      - name: Set startup command
-        run: |
-          az webapp config set \
-            --name datemeal-backend \
-            --resource-group rg-mxcao_alina-3429_ai \
-            --startup-file "uvicorn main:app --host=0.0.0.0 --port=8000"
+      - name: Set startup command (if needed)
+      run: |
+        az webapp config set \
+          --name datemeal-backend \
+          --resource-group rg-mxcao_alina-3429_ai \
+          --startup-file "uvicorn main:app --host=0.0.0.0 --port=8000"
+  
+      - name: Wait before deploy
+        run: sleep 30  # <-- adds a 30-second delay to avoid race condition
+
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: datemeal-backend
+          package: release.zip
+
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
