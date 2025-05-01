@@ -22,3 +22,8 @@ async def root():
 app.include_router(advise.router)
 app.include_router(health.router)
 app.include_router(refine.router)
+
+if __name__ == "__main__":
+    import uvicorn
+    print("Starting server on http://localhost:8080")
+    uvicorn.run(app, host="0.0.0.0", port=8080)

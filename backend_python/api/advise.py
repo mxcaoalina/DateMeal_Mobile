@@ -27,6 +27,14 @@ restaurant_image_ids = [
 def get_vibe_description(vibe: str, restaurant_name: str, cuisine: str) -> str:
     return f"{restaurant_name} is a lovely {cuisine} restaurant that perfectly captures a {vibe.lower()} vibe. It's a great place for your date!"
 
+def get_website_url(restaurant_data):
+    """Helper function to format website URLs safely."""
+    if 'website' in restaurant_data and restaurant_data['website']:
+        return restaurant_data['website']
+    
+    name = restaurant_data.get('name', 'samplerestaurant')
+    clean_name = name.lower().replace(' ', '').replace("'", '')
+    return f"https://www.{clean_name}.com"
 
 router = APIRouter()
 
@@ -112,7 +120,7 @@ async def get_recommendation(request: AdviseRequest):
                 address=restaurant_data.get('fullAddress', f"{random.randint(1,999)} Main St, {location}"),
                 phone=restaurant_data.get('phone', f"[Sample] ({random.randint(200,999)}) {random.randint(100,999)}-{random.randint(1000,9999)}"),
                 clean_name=restaurant_data.get('name', 'samplerestaurant').lower().replace(' ', '').replace("'", ''),
-                website=restaurant_data.get('website', f"https://www.{restaurant_data.get('name', 'samplerestaurant').lower().replace(' ', '').replace("'", '')}.com"),
+                website=get_website_url(restaurant_data),
                 imageUrl=restaurant_data.get('imageUrl', f"https://source.unsplash.com/featured/?{cuisine},restaurant"),
                 openingHours=restaurant_data.get('openingHours', ["11:00 AM - 10:00 PM"] * 7),
                 highlights=restaurant_data.get('highlights', [cuisine.capitalize(), vibe.capitalize(), location]),
@@ -132,9 +140,7 @@ async def get_recommendation(request: AdviseRequest):
 
         cuisine_keyword = cuisine.replace(' ', '+')
         image_url = f"https://source.unsplash.com/featured/?{cuisine_keyword},restaurant"
-        website_name = fallback_data['name'].lower().replace(' ', '').replace("'", '')
-        website_url = f"https://www.{website_name}.com"
-
+        
         restaurant = Restaurant(
             id=f"static-{random.randint(1000, 9999)}",
             name=fallback_data["name"],
@@ -145,7 +151,7 @@ async def get_recommendation(request: AdviseRequest):
             description=fallback_data["description"],
             address=f"{random.randint(1,999)} Park Ave, {location}",
             phone=f"[Sample] ({random.randint(200,999)}) {random.randint(100,999)}-{random.randint(1000,9999)}",
-            website=website_url,
+            website=get_website_url(fallback_data),
             imageUrl=image_url,
             openingHours=["11:00 AM - 10:00 PM"] * 7,
             highlights=["Locally loved", "Charming setting", "Great food"],

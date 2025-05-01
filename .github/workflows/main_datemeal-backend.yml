@@ -47,6 +47,9 @@ jobs:
           ls -la
           zip -r ../release.zip .
           echo "Package created successfully, size: $(du -h ../release.zip | cut -f1)"
+          
+          # Upload to Azure Storage for Run-From-Package deployment
+          az storage blob upload --auth-mode login --account-name datemelbackendstorage --container-name deployments --name release.zip --file ../release.zip --overwrite
 
       - name: Azure Login using OIDC
         uses: azure/login@v2
@@ -61,6 +64,8 @@ jobs:
             --name datemeal-backend \
             --resource-group rg-mxcao_alina-3429_ai
           echo "Web app stopped"
+          echo "Waiting 60 seconds for changes to propagate..."
+          sleep 60
 
       - name: Configure Azure Web App
         run: |
@@ -83,6 +88,7 @@ jobs:
             --settings \
               WEBSITES_PORT=8000 \
               SCM_DO_BUILD_DURING_DEPLOYMENT=true \
+              WEBSITE_RUN_FROM_PACKAGE="1" \
               AZURE_OPENAI_API_KEY=${{ secrets.AZURE_OPENAI_API_KEY }} \
               AZURE_OPENAI_ENDPOINT=${{ secrets.AZURE_OPENAI_ENDPOINT }} \
               AZURE_OPENAI_DEPLOYMENT_NAME=${{ secrets.AZURE_OPENAI_DEPLOYMENT_NAME }}
@@ -91,26 +97,20 @@ jobs:
           # Verify changes
           echo "Updated web app configuration:"
           az webapp config show --name datemeal-backend --resource-group rg-mxcao_alina-3429_ai --query "{linuxFxVersion:linuxFxVersion,appCommandLine:appCommandLine}"
+          
+          echo "Waiting 60 seconds for changes to propagate..."
+          sleep 60
 
-      - name: Deploy to Azure Web App
-        id: deploy-to-webapp
-        uses: azure/webapps-deploy@v3
-        with:
-          app-name: datemeal-backend
-          package: release.zip
-          slot-name: production
-        timeout-minutes: 10
-
-      - name: Check deployment status
-        if: ${{ always() }}
+      - name: Deploy directly to app service
         run: |
-          if [ "${{ steps.deploy-to-webapp.outcome }}" == "success" ]; then
-            echo "Deployment succeeded"
-          else
-            echo "Deployment failed"
-            echo "Checking logs..."
-            az webapp log tail --name datemeal-backend --resource-group rg-mxcao_alina-3429_ai
-          fi
+          echo "Deploying using az webapp deployment command..."
+          az webapp deployment source config-zip \
+            --name datemeal-backend \
+            --resource-group rg-mxcao_alina-3429_ai \
+            --src release.zip
+          
+          echo "Waiting 60 seconds after deployment..."
+          sleep 60
 
       - name: Start Web App
         run: |
