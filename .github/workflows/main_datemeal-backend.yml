@@ -22,7 +22,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.9'
+          python-version: '3.10'
 
       - name: Install dependencies
         run: |
@@ -56,7 +56,7 @@ jobs:
             --name datemeal-backend \
             --resource-group rg-mxcao_alina-3429_ai \
             --startup-file "startup.sh" \
-            --linux-fx-version "PYTHON|3.9"
+            --linux-fx-version "PYTHON|3.10"
           
           # Set environment variables
           az webapp config appsettings set \
