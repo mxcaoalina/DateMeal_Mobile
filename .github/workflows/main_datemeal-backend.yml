@@ -13,6 +13,7 @@ permissions:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 10  # Add overall job timeout
 
     steps:
       - name: Checkout repo
@@ -73,3 +74,4 @@ jobs:
           app-name: datemeal-backend
           package: release.zip
           slot-name: production
+        timeout-minutes: 7  # Add timeout for deployment step
