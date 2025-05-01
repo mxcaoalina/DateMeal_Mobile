@@ -69,7 +69,7 @@ async def get_recommendation(request: AdviseRequest):
                 description=data.get("description", "A delightful spot for your meal."),
                 address=data.get("fullAddress", f"{random.randint(1,999)} Main St, {location}"),
                 phone=data.get("phone", f"[Sample] ({random.randint(200,999)}) {random.randint(100,999)}-{random.randint(1000,9999)}"),
-                website=data.get("website", f"https://www.{data['name'].lower().replace(' ', '').replace("'", '')}.com"),
+                website=data.get("website", f"https://www.{data['name'].lower().replace(' ', '').replace(\"'\", '')}.com"),
                 imageUrl=data.get("imageUrl", default_image_url),
                 openingHours=data.get("openingHours", ["11:00 AM - 10:00 PM"] * 7),
                 highlights=data.get("highlights", [cuisine.capitalize(), vibe.capitalize(), location]),
