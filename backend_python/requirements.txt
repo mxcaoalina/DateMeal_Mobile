@@ -1,7 +1,6 @@
 uvicorn==0.24.0
 fastapi==0.104.1
 python-dotenv==1.0.0
-semantic-kernel==0.3.12.dev0
 pydantic==1.10.12
 httpx==0.25.0
 gunicorn==21.2.0
