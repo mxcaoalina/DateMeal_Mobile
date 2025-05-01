@@ -72,7 +72,7 @@ jobs:
           az webapp config set \
             --name datemeal-backend \
             --resource-group rg-mxcao_alina-3429_ai \
-            --startup-file "bash startup.sh" \
+            --startup-file "python entrypoint.py" \
             --linux-fx-version "PYTHON|3.10"
           echo "Startup command and Python version set"
           
