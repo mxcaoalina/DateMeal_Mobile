@@ -35,14 +35,20 @@ jobs:
           cd backend_python
           zip -r ../release.zip .
 
-      - name: Authenticate with Azure using OIDC
+      - name: Azure Login using federated identity
         uses: azure/login@v2
         with:
           client-id: 8f9c5f86-8888-49c7-87d9-9f6fcce1dee7
           tenant-id: f81596cd-c622-488d-bb28-77b019541f23
           subscription-id: 6122595f-c233-4053-872e-9ee01d92a207
 
-      - name: Set startup command (if needed)
+      - name: Clean up Azure App Service (force delete old code)
+        run: |
+          az rest --method delete --url https://datemeal-backend.scm.azurewebsites.net/api/vfs/site/wwwroot/
+        env:
+          AZURE_WEBAPP_NAME: datemeal-backend
+
+      - name: Set startup command
         run: |
           az webapp config set \
             --name datemeal-backend \
