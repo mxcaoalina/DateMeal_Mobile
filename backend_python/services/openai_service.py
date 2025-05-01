@@ -2,8 +2,7 @@ from models.schemas import Restaurant
 import logging
 import random
 import os
-from azure.core.credentials import AzureKeyCredential
-from azure.ai.openai import AzureOpenAI
+from openai import AzureOpenAI
 
 logger = logging.getLogger(__name__)
 
