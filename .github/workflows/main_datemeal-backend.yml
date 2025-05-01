@@ -1,4 +1,4 @@
-name: Deploy FastAPI Backend to Azure App Service
+name: Build and Deploy FastAPI to Azure
 
 on:
   push:
@@ -6,46 +6,43 @@ on:
       - main
   workflow_dispatch:
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Set up Python 3.9
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.9'
 
-      - name: Clean any previous zip build
-        run: |
-          rm -f release.zip || true
-          rm -rf backend_python/__pycache__
-
-      - name: Install backend dependencies
+      - name: Install dependencies
         run: |
           cd backend_python
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          pip install uvicorn
 
-      - name: Zip backend folder
+      - name: Zip FastAPI backend
         run: |
           cd backend_python
           zip -r ../release.zip .
 
-      - name: Azure Login
+      - name: Authenticate with Azure using OIDC
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_3EB7A781DDC84BD68C182E1C81E0C400 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_24FF108956964AB397BE5528382AC765 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_20C521CC1CF040F6818DF9699433DF0D }}
+          client-id: 8f9c5f86-8888-49c7-87d9-9f6fcce1dee7
+          tenant-id: f81596cd-c622-488d-bb28-77b019541f23
+          subscription-id: 6122595f-c233-4053-872e-9ee01d92a207
 
-      - name: Set FastAPI startup command
+      - name: Set startup command (if needed)
         run: |
           az webapp config set \
             --name datemeal-backend \
@@ -55,5 +52,5 @@ jobs:
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'datemeal-backend'
+          app-name: datemeal-backend
           package: release.zip
