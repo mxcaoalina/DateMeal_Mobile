@@ -75,7 +75,9 @@ jobs:
             --resource-group rg-mxcao_alina-3429_ai \
             --settings \
               WEBSITES_PORT=8000 \
-              PYTHONPATH=/home/site/wwwroot/backend_python
+              PYTHONPATH=/home/site/wwwroot/backend_python \
+              AZURE_OPENAI_API_KEY=${{ secrets.AZURE_OPENAI_API_KEY }} \
+              AZURE_OPENAI_ENDPOINT=${{ secrets.AZURE_OPENAI_ENDPOINT }}
 
       - name: Wait before deploy
         run: sleep 30  # <-- adds a 30-second delay to avoid race condition
