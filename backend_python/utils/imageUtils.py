@@ -1,89 +1,193 @@
 import os
 import base64
-from typing import Optional, Union
-from pathlib import Path
-import requests
-from io import BytesIO
+import time
+import logging
+import uuid
+from typing import List, Optional
+from azure.storage.blob import BlobServiceClient, ContentSettings
+from azure.core.exceptions import ResourceExistsError, ResourceNotFoundError
 
-class ImageUtils:
-    """Utility class for handling images in the application."""
+logger = logging.getLogger(__name__)
+
+# Constants
+AZURE_STORAGE_CONNECTION_STRING = os.environ.get("AZURE_STORAGE_CONNECTION_STRING")
+CONTAINER_NAME = os.environ.get("AZURE_STORAGE_CONTAINER_NAME", "images")
+LOCAL_IMAGE_DIR = os.path.join("static", "images")
+
+# Ensure local directory exists
+os.makedirs(LOCAL_IMAGE_DIR, exist_ok=True)
+
+def get_blob_service_client():
+    """Get Azure Blob Service Client"""
+    if not AZURE_STORAGE_CONNECTION_STRING:
+        logger.warning("Azure Storage connection string not found. Using local storage.")
+        return None
     
-    @staticmethod
-    def encode_image_to_base64(image_path: Union[str, Path]) -> Optional[str]:
-        """
-        Encode an image file to base64 string
-        
-        Args:
-            image_path: Path to the image file
-            
-        Returns:
-            Base64 encoded string or None if file doesn't exist
-        """
-        try:
-            with open(image_path, "rb") as image_file:
-                return base64.b64encode(image_file.read()).decode('utf-8')
-        except Exception as e:
-            print(f"Error encoding image: {e}")
-            return None
+    try:
+        return BlobServiceClient.from_connection_string(AZURE_STORAGE_CONNECTION_STRING)
+    except Exception as e:
+        logger.error(f"Error creating Azure Blob Service client: {str(e)}")
+        return None
+
+def ensure_container_exists(blob_service_client):
+    """Ensure the blob container exists"""
+    if not blob_service_client:
+        return False
     
-    @staticmethod
-    def download_image(url: str) -> Optional[bytes]:
-        """
-        Download image from URL
-        
-        Args:
-            url: URL of the image
-            
-        Returns:
-            Image bytes or None if download fails
-        """
-        try:
-            response = requests.get(url, timeout=10)
-            response.raise_for_status()
-            return response.content
-        except Exception as e:
-            print(f"Error downloading image: {e}")
-            return None
+    try:
+        container_client = blob_service_client.get_container_client(CONTAINER_NAME)
+        # Check if container exists
+        if not container_client.exists():
+            container_client = blob_service_client.create_container(CONTAINER_NAME)
+            logger.info(f"Created container: {CONTAINER_NAME}")
+        return True
+    except ResourceExistsError:
+        # Container already exists
+        logger.info(f"Container {CONTAINER_NAME} already exists")
+        return True
+    except Exception as e:
+        logger.error(f"Error ensuring container exists: {str(e)}")
+        return False
+
+def save_base64_image(base64_string: str, filename_prefix: str = "image") -> Optional[str]:
+    """
+    Save a base64 encoded image to Azure Blob Storage or local filesystem
     
-    @staticmethod
-    def save_image(image_data: bytes, output_path: Union[str, Path]) -> bool:
-        """
-        Save image bytes to file
+    Args:
+        base64_string: Base64 encoded image data
+        filename_prefix: Prefix for the generated filename
         
-        Args:
-            image_data: Image bytes
-            output_path: Path to save the image
-            
-        Returns:
-            True if successful, False otherwise
-        """
-        try:
-            # Ensure directory exists
-            os.makedirs(os.path.dirname(output_path), exist_ok=True)
-            
-            with open(output_path, "wb") as f:
-                f.write(image_data)
-            return True
-        except Exception as e:
-            print(f"Error saving image: {e}")
-            return False
-            
-    @staticmethod
-    def url_to_base64(url: str) -> Optional[str]:
-        """
-        Download image from URL and convert to base64
+    Returns:
+        URL of the saved image or None if failed
+    """
+    try:
+        # Remove base64 prefix if present
+        if "," in base64_string:
+            _, base64_string = base64_string.split(",", 1)
         
-        Args:
-            url: URL of the image
+        # Decode base64 string
+        image_data = base64.b64decode(base64_string)
+        
+        # Generate unique filename
+        timestamp = int(time.time())
+        unique_id = str(uuid.uuid4()).replace("-", "")[:8]
+        filename = f"{filename_prefix}_{timestamp}_{unique_id}.jpg"
+        
+        # Try to save to Azure Blob Storage
+        blob_service_client = get_blob_service_client()
+        if blob_service_client and ensure_container_exists(blob_service_client):
+            # Save to Azure Blob Storage
+            blob_client = blob_service_client.get_blob_client(
+                container=CONTAINER_NAME, 
+                blob=filename
+            )
             
-        Returns:
-            Base64 encoded string or None if download fails
-        """
-        try:
-            image_data = ImageUtils.download_image(url)
-            if image_data:
-                return base64.b64encode(image_data).decode('utf-8')
-            return None
-        except Exception as e:
-            print(f"Error converting URL to base64: {e}")
-            return None 
+            # Upload with content settings for MIME type
+            blob_client.upload_blob(
+                image_data,
+                content_settings=ContentSettings(content_type="image/jpeg")
+            )
+            
+            # Return the blob URL
+            return blob_client.url
+        
+        # Fallback to local storage
+        logger.info(f"Using local storage for image {filename}")
+        local_path = os.path.join(LOCAL_IMAGE_DIR, filename)
+        with open(local_path, "wb") as f:
+            f.write(image_data)
+        
+        # Return local path that can be accessed via static file serving
+        return f"/static/images/{filename}"
+        
+    except Exception as e:
+        logger.error(f"Error saving image: {str(e)}")
+        return None
+
+def delete_image(image_url: str) -> bool:
+    """
+    Delete an image from Azure Blob Storage or local filesystem
+    
+    Args:
+        image_url: URL of the image to delete
+        
+    Returns:
+        True if deletion was successful, False otherwise
+    """
+    try:
+        # Check if this is an Azure Blob Storage URL
+        if AZURE_STORAGE_CONNECTION_STRING and "blob.core.windows.net" in image_url:
+            # Extract the blob name from the URL
+            blob_name = image_url.split(f"{CONTAINER_NAME}/")[-1]
+            if "?" in blob_name:  # Handle SAS token
+                blob_name = blob_name.split("?")[0]
+                
+            # Delete from Azure Blob Storage
+            blob_service_client = get_blob_service_client()
+            if blob_service_client:
+                blob_client = blob_service_client.get_blob_client(
+                    container=CONTAINER_NAME, 
+                    blob=blob_name
+                )
+                blob_client.delete_blob()
+                logger.info(f"Deleted blob: {blob_name}")
+                return True
+                
+        # Handle local file
+        elif image_url.startswith("/static/images/"):
+            filename = image_url.split("/")[-1]
+            local_path = os.path.join(LOCAL_IMAGE_DIR, filename)
+            if os.path.exists(local_path):
+                os.remove(local_path)
+                logger.info(f"Deleted local file: {local_path}")
+                return True
+                
+        logger.warning(f"Could not determine how to delete image: {image_url}")
+        return False
+        
+    except ResourceNotFoundError:
+        logger.warning(f"Image not found: {image_url}")
+        return False
+    except Exception as e:
+        logger.error(f"Error deleting image: {str(e)}")
+        return False
+
+def list_images(max_results: int = 100) -> List[str]:
+    """
+    List images in Azure Blob Storage or local filesystem
+    
+    Args:
+        max_results: Maximum number of results to return
+        
+    Returns:
+        List of image URLs
+    """
+    result = []
+    
+    try:
+        # Try Azure Blob Storage
+        blob_service_client = get_blob_service_client()
+        if blob_service_client and ensure_container_exists(blob_service_client):
+            container_client = blob_service_client.get_container_client(CONTAINER_NAME)
+            blobs = container_client.list_blobs(max_results=max_results)
+            
+            for blob in blobs:
+                blob_client = blob_service_client.get_blob_client(
+                    container=CONTAINER_NAME, 
+                    blob=blob.name
+                )
+                result.append(blob_client.url)
+        
+        # Add local files if needed or if Azure failed
+        if not result or not blob_service_client:
+            if os.path.exists(LOCAL_IMAGE_DIR):
+                local_files = os.listdir(LOCAL_IMAGE_DIR)
+                for file in local_files[:max_results]:
+                    if file.lower().endswith(('.jpg', '.jpeg', '.png', '.gif')):
+                        result.append(f"/static/images/{file}")
+        
+        return result
+        
+    except Exception as e:
+        logger.error(f"Error listing images: {str(e)}")
+        return result

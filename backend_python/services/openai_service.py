@@ -61,10 +61,14 @@ async def generate_azure_openai_recommendation(preferences: dict) -> list:
             logger.warning("Missing API key, endpoint, or client - returning sample data")
             return get_sample_restaurant(preferences)
             
+        # Get cuisine safely
+        cuisines = preferences.get('cuisines', [])
+        cuisine_str = cuisines[0] if cuisines and len(cuisines) > 0 else "italian"
+            
         # Construct the prompt based on user preferences
         prompt = f"""
         Based on the following preferences, recommend a restaurant:
-        - Cuisine: {preferences.get('cuisines', ['italian'])[0]}
+        - Cuisine: {cuisine_str}
         - Vibe: {preferences.get('vibe', 'romantic')}
         - Location: {preferences.get('location', 'NYC')}
         - Budget: {preferences.get('budget', '$$')}
@@ -141,9 +145,13 @@ async def generate_azure_openai_recommendation(preferences: dict) -> list:
 
 def get_sample_restaurant(preferences):
     """Return a sample restaurant for fallback"""
+    # Safely get cuisine, with a fallback if list is empty
+    cuisines = preferences.get("cuisines", [])
+    cuisine = cuisines[0].capitalize() if cuisines and len(cuisines) > 0 else "Italian"
+    
     return [{
         "name": "Sample Restaurant",
-        "cuisine": preferences.get("cuisines", ["italian"])[0].capitalize(),
+        "cuisine": cuisine,
         "priceRange": preferences.get("budget", "$$"),
         "location": preferences.get("location", "NYC"),
         "rating": 4.5,
