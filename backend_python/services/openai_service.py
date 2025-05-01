@@ -3,14 +3,15 @@ import logging
 import random
 import os
 from azure.core.credentials import AzureKeyCredential
-from azure.ai.openai import OpenAIClient
+from azure.ai.openai import AzureOpenAI
 
 logger = logging.getLogger(__name__)
 
 # Initialize Azure OpenAI client
-client = OpenAIClient(
-    endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
-    credential=AzureKeyCredential(os.getenv("AZURE_OPENAI_API_KEY"))
+client = AzureOpenAI(
+    api_key=os.getenv("AZURE_OPENAI_API_KEY"),
+    api_version="2024-02-15-preview",
+    azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT")
 )
 
 async def generate_azure_openai_recommendation(preferences: dict) -> list:
