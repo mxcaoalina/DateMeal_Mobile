@@ -13,7 +13,7 @@ permissions:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 10  # Add overall job timeout
+    timeout-minutes: 10
 
     steps:
       - name: Checkout repo
@@ -29,11 +29,11 @@ jobs:
           cd backend_python
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install uvicorn
 
-      - name: Zip FastAPI backend
+      - name: Create deployment package
         run: |
           cd backend_python
+          rm -rf venv __pycache__ .env
           zip -r ../release.zip .
 
       - name: Azure Login using OIDC
@@ -49,38 +49,24 @@ jobs:
             --name datemeal-backend \
             --resource-group rg-mxcao_alina-3429_ai
 
-      - name: Clean up existing deployments
-        run: |
-          az webapp deployment source delete \
-            --name datemeal-backend \
-            --resource-group rg-mxcao_alina-3429_ai
-
       - name: Configure Azure Web App
         run: |
-          # Set startup command
+          # Set startup command and Python version
           az webapp config set \
             --name datemeal-backend \
             --resource-group rg-mxcao_alina-3429_ai \
-            --startup-file "uvicorn main:app --host=0.0.0.0 --port=8000"
-          
-          # Set Python version
-          az webapp config set \
-            --name datemeal-backend \
-            --resource-group rg-mxcao_alina-3429_ai \
+            --startup-file "startup.sh" \
             --linux-fx-version "PYTHON|3.9"
           
-          # Set environment variables if needed
+          # Set environment variables
           az webapp config appsettings set \
             --name datemeal-backend \
             --resource-group rg-mxcao_alina-3429_ai \
             --settings \
               WEBSITES_PORT=8000 \
-              PYTHONPATH=/home/site/wwwroot/backend_python \
+              SCM_DO_BUILD_DURING_DEPLOYMENT=true \
               AZURE_OPENAI_API_KEY=${{ secrets.AZURE_OPENAI_API_KEY }} \
               AZURE_OPENAI_ENDPOINT=${{ secrets.AZURE_OPENAI_ENDPOINT }}
-
-      - name: Wait before deploy
-        run: sleep 30  # <-- adds a 30-second delay to avoid race condition
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
@@ -88,7 +74,7 @@ jobs:
           app-name: datemeal-backend
           package: release.zip
           slot-name: production
-        timeout-minutes: 7  # Add timeout for deployment step
+        timeout-minutes: 7
 
       - name: Start Web App
         run: |
