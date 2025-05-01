@@ -194,6 +194,8 @@ It uses dynamic input from the user (e.g., "Romantic Italian in Brooklyn") to po
 
 ## App Screens & Demo Walkthrough
 
+**▶ [Watch the 3-min DateMeal demo](https://drive.google.com/file/d/1_zzxjOtndYJLJsYm19UYlWKZYLyoMRw1/view?usp=share_link)** – user flow + architecture snapshot
+
 <div align="center">
   <img src="assets/home.png" alt="Home Screen" width="250"/>
   <p><b>Home Screen</b>: Displays a greeting, shows saved restaurants and quick actions like chatting or editing preferences.</p>
