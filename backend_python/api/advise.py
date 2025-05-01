@@ -98,164 +98,69 @@ async def get_recommendation(request: AdviseRequest):
                 cuisine=cuisine.lower(),
                 location=location,
                 name=restaurant_data.get('name', 'this spot'),
-                description=restaurant_data.get('description', 'A wonderful dining experience awaits you.')
+                description=restaurant_data.get('description', '')
             )
 
-            
-            # Create a unique ID for this recommendation
-            unique_id = f"real-ai-{random.randint(1000, 9999)}"
-            
-            # Default to a reliable static image URL for cuisine if we don't find one
-            cuisine_formatted = cuisine.lower().replace(' ', '-')
-            cuisine_sum = sum(ord(c) for c in cuisine)
-            # image_id = restaurant_image_ids[cuisine_sum % len(restaurant_image_ids)]
-            # default_image_url = f"https://images.unsplash.com/photo-{image_id}?w=800&q=80"
-            cuisine_keyword = cuisine.lower().replace(' ', '+')
-            default_image_url = f"https://source.unsplash.com/featured/?{cuisine_keyword},restaurant"
-            
-            # Properly handle the address - use fullAddress if provided, otherwise construct a realistic sample
-            restaurant_address = ""
-            if "fullAddress" in restaurant_data:
-                restaurant_address = restaurant_data["fullAddress"]
-            elif "address" in restaurant_data:
-                restaurant_address = restaurant_data["address"]
-            else:
-                restaurant_address = f"{random.randint(1, 999)} {random.choice(['Main', 'Park', 'Broadway', 'Madison', 'Fifth'])} {random.choice(['St', 'Ave', 'Blvd'])}, {restaurant_data.get('location', location)}, {location}"
-            
-            # Handle image URL - if OpenAI returns one, check if it's a real URL (not example.com)
-            restaurant_image = default_image_url
-            if "imageUrl" in restaurant_data and "example.com" not in restaurant_data["imageUrl"]:
-                restaurant_image = restaurant_data["imageUrl"]
-            
             restaurant = Restaurant(
-                id=unique_id,
-                name=restaurant_data["name"],
-                description=restaurant_data.get("description", "A wonderful dining experience awaits you."),
-                cuisineType=restaurant_data.get("cuisine", cuisine.capitalize()),
-                priceRange=restaurant_data.get("priceRange", budget),
-                location=restaurant_data.get("location", location),
-                rating=restaurant_data.get("rating", 4.8),
-                imageUrl=restaurant_image,
-                address=restaurant_address,
-                phone=restaurant_data.get("phone") if "phone" in restaurant_data else f"[Sample] ({random.randint(200, 999)}) {random.randint(100, 999)}-{random.randint(1000, 9999)}",
-                website=restaurant_data.get("website") if "website" in restaurant_data and restaurant_data.get("website") else (
-                    lambda name: "https://www." + name.lower().replace(" ", "").replace("'", "") + ".com"
-                )(restaurant_data['name']),
-                openingHours=[
-                    "11:00 AM - 10:00 PM",
-                    "11:00 AM - 10:00 PM",
-                    "11:00 AM - 10:00 PM",
-                    "11:00 AM - 10:00 PM",
-                    "11:00 AM - 11:00 PM",
-                    "11:00 AM - 11:00 PM",
-                    "12:00 PM - 9:00 PM"
-                ],
-                highlights=restaurant_data.get("highlights", [cuisine.capitalize(), vibe.capitalize(), location]),
+                id=f"ai-{random.randint(1000, 9999)}",
+                name=restaurant_data.get('name', 'Sample Restaurant'),
+                cuisineType=restaurant_data.get('cuisine', cuisine.capitalize()),
+                priceRange=restaurant_data.get('priceRange', budget),
+                location=restaurant_data.get('location', location),
+                rating=restaurant_data.get('rating', 4.5),
+                description=restaurant_data.get('description', 'A delightful spot for your meal.'),
+                address=restaurant_data.get('fullAddress', f"{random.randint(1,999)} Main St, {location}"),
+                phone=restaurant_data.get('phone', f"[Sample] ({random.randint(200,999)}) {random.randint(100,999)}-{random.randint(1000,9999)}"),
+                clean_name=restaurant_data.get('name', 'samplerestaurant').lower().replace(' ', '').replace("'", ''),
+                website=restaurant_data.get('website', f"https://www.{restaurant_data.get('name', 'samplerestaurant').lower().replace(' ', '').replace("'", '')}.com"),
+                imageUrl=restaurant_data.get('imageUrl', f"https://source.unsplash.com/featured/?{cuisine},restaurant"),
+                openingHours=restaurant_data.get('openingHours', ["11:00 AM - 10:00 PM"] * 7),
+                highlights=restaurant_data.get('highlights', [cuisine.capitalize(), vibe.capitalize(), location]),
                 reasonsToRecommend=[
                     f"Perfect for a {vibe} experience",
                     f"Authentic {cuisine} cuisine",
                     f"Matches your {budget} budget"
                 ],
-                menuItems=restaurant_data.get("menuItems", menu_items)
+                menuItems=menu_items
             )
-            
-            logger.info(f"Returning recommendation for: {restaurant.name}")
+
             return AdviseResponse(response=recommendation_text, restaurant=restaurant)
-        
-        # If Azure OpenAI didn't return results, fall back to the static data
-        logger.warning("No results from Azure OpenAI, falling back to static data")
-        
-        # Default to Italian if cuisine not found
-        cuisine_key = cuisine if cuisine in RESTAURANT_DATA else "italian"
-        
-        # Select a restaurant based on cuisine
-        restaurant_data = random.choice(RESTAURANT_DATA[cuisine_key])
-        logger.info(f"Using fallback restaurant: {restaurant_data['name']}")
-        
-        # Generate a unique restaurant ID
-        unique_id = f"real-{random.randint(1000, 9999)}"
-        
-        # Create a personalized recommendation message
-        recommendation_text = f"Based on your preference for a {vibe} atmosphere and {cuisine} cuisine, I've found the perfect spot in {location}!\n\n{get_vibe_description(vibe, restaurant_data['name'], cuisine)}"
-        
-        # Select a relevant image based on cuisine
-        cuisine_sum = sum(ord(c) for c in cuisine)
-        image_id = restaurant_image_ids[cuisine_sum % len(restaurant_image_ids)]
-        
-        cuisine_keyword = cuisine.lower().replace(' ', '+')
-        cuisine_image_url = f"https://source.unsplash.com/featured/?{cuisine_keyword},restaurant"
-        
-        # Generate a realistic address
-        restaurant_address = f"{random.randint(1, 999)} {random.choice(['Main', 'Park', 'Broadway', 'Madison', 'Fifth'])} {random.choice(['St', 'Ave', 'Blvd'])}, {random.choice(['Greenwich Village', 'SoHo', 'Upper East Side', 'Brooklyn Heights', 'Williamsburg'])}, {location}"
-        
-        # Create a realistic website
-        restaurant_name = restaurant_data['name'].lower().replace(' ', '')
-        restaurant_name = restaurant_name.replace("'", "")  # Handle single quotes outside the f-string
-        restaurant_website = "https://www." + restaurant_name + ".com"
-        
-        # Generate sample menu items based on cuisine
-        menu_items = [
-            {
-                "name": f"{cuisine.capitalize()} Specialty",
-                "description": f"House specialty {cuisine} dish",
-                "price": "$" + str(random.randint(15, 35)),
-                "category": "Main"
-            },
-            {
-                "name": f"{cuisine.capitalize()} Appetizer Sampler",
-                "description": f"Selection of traditional {cuisine} starters",
-                "price": "$" + str(random.randint(10, 20)),
-                "category": "Appetizer"
-            },
-            {
-                "name": f"Chef's {cuisine.capitalize()} Selection",
-                "description": f"Chef's daily special {cuisine} creation",
-                "price": "$" + str(random.randint(20, 40)),
-                "category": "Main"
-            },
-            {
-                "name": f"Traditional {cuisine.capitalize()} Dessert",
-                "description": f"Authentic {cuisine} sweet",
-                "price": "$" + str(random.randint(8, 15)),
-                "category": "Dessert"
-            }
-        ]
-        
-        # Create restaurant object
+
+        # Fallback to static sample
+        fallback_data = random.choice(RESTAURANT_DATA.get(cuisine, RESTAURANT_DATA["italian"]))
+        logger.warning("Using fallback data.")
+
+        cuisine_keyword = cuisine.replace(' ', '+')
+        image_url = f"https://source.unsplash.com/featured/?{cuisine_keyword},restaurant"
+        website_name = fallback_data['name'].lower().replace(' ', '').replace("'", '')
+        website_url = f"https://www.{website_name}.com"
+
         restaurant = Restaurant(
-            id=unique_id,
-            name=restaurant_data["name"],
-            description=restaurant_data["description"],
+            id=f"static-{random.randint(1000, 9999)}",
+            name=fallback_data["name"],
             cuisineType=cuisine.capitalize(),
-            priceRange=restaurant_data.get("priceRange", "$$"),
+            priceRange=fallback_data.get("priceRange", "$$"),
             location=location,
-            rating=restaurant_data.get("rating", 4.5),
-            imageUrl=cuisine_image_url,
-            address=restaurant_address,
-            phone=f"[Sample] ({random.randint(200, 999)}) {random.randint(100, 999)}-{random.randint(1000, 9999)}",
-            website=restaurant_website,
-            openingHours=[
-                "11:00 AM - 10:00 PM",
-                "11:00 AM - 10:00 PM",
-                "11:00 AM - 10:00 PM",
-                "11:00 AM - 10:00 PM",
-                "11:00 AM - 11:00 PM",
-                "11:00 AM - 11:00 PM",
-                "12:00 PM - 9:00 PM"
-            ],
-            highlights=restaurant_data.get("highlights", ["Cozy ambiance", "Great for dates", "Highly rated by locals"]),
+            rating=fallback_data.get("rating", 4.5),
+            description=fallback_data["description"],
+            address=f"{random.randint(1,999)} Park Ave, {location}",
+            phone=f"[Sample] ({random.randint(200,999)}) {random.randint(100,999)}-{random.randint(1000,9999)}",
+            website=website_url,
+            imageUrl=image_url,
+            openingHours=["11:00 AM - 10:00 PM"] * 7,
+            highlights=["Locally loved", "Charming setting", "Great food"],
             reasonsToRecommend=[
                 f"Perfect for a {vibe} experience",
-                f"Authentic {cuisine} cuisine",
-                f"Matches your {budget} budget"
+                f"Classic {cuisine} dishes",
+                f"Great ambiance and value"
             ],
-            menuItems=menu_items
+            menuItems=[]
         )
 
-        logger.info(f"Returning fallback recommendation for: {restaurant.name}")
-        return AdviseResponse(response=recommendation_text, restaurant=restaurant)
+        response_text = f"Based on your vibe for {vibe}, you might enjoy {restaurant.name} in {location}."
+        return AdviseResponse(response=response_text, restaurant=restaurant)
 
     except Exception as e:
-        logger.exception(f"Error processing recommendation: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.exception("Error generating recommendation")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
