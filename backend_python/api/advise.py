@@ -108,10 +108,10 @@ async def get_recommendation(request: AdviseRequest):
             # Default to a reliable static image URL for cuisine if we don't find one
             cuisine_formatted = cuisine.lower().replace(' ', '-')
             cuisine_sum = sum(ord(c) for c in cuisine)
+            # image_id = restaurant_image_ids[cuisine_sum % len(restaurant_image_ids)]
+            # default_image_url = f"https://images.unsplash.com/photo-{image_id}?w=800&q=80"
             cuisine_keyword = cuisine.lower().replace(' ', '+')
-            restaurant_image = data.get("imageUrl")
-            if not restaurant_image or "example.com" in restaurant_image:
-                restaurant_image = f"https://source.unsplash.com/featured/?{cuisine_keyword},restaurant"
+            default_image_url = f"https://source.unsplash.com/featured/?{cuisine_keyword},restaurant"
             
             # Properly handle the address - use fullAddress if provided, otherwise construct a realistic sample
             restaurant_address = ""

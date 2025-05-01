@@ -1,144 +1,129 @@
-import os
-import json
-import httpx
+from fastapi import APIRouter, HTTPException
+from models.schemas import AdviseRequest, AdviseResponse, Restaurant
+from services.openai_service import generate_azure_openai_recommendation
+from services.restaurant_data import RESTAURANT_DATA
 import logging
+import random
 
-from dotenv import load_dotenv
-
-# Load environment variables from .env file
-load_dotenv()
-
-
-# Load environment variables
-AZURE_API_KEY = os.getenv("AZURE_API_KEY")
-AZURE_ENDPOINT = os.getenv("AZURE_ENDPOINT")
-AZURE_DEPLOYMENT_NAME = os.getenv("AZURE_DEPLOYMENT_NAME", "gpt-4o")
-headers = {
-    "Content-Type": "application/json",
-    "api-key": AZURE_API_KEY
-}
-
+router = APIRouter()
 logger = logging.getLogger(__name__)
 
-async def generate_azure_openai_recommendation(preferences: dict):
-    """Generate restaurant recommendations using Azure OpenAI."""
+# Fallback image keywords
+restaurant_image_keywords = [
+    "italian,restaurant,romantic", "french,bistro,wine", "japanese,sushi,cozy",
+    "mexican,upscale,cocktails", "american,steakhouse,romantic",
+    "seafood,fine-dining,ocean", "vegan,restaurant,green"
+]
+
+description_templates = [
+    "Looking for a {vibe} spot with {cuisine} cuisine in {location}? I have just the place for you: {name}! {description}",
+    "Based on your vibe for {vibe} and love for {cuisine}, you should definitely check out {name} in {location}! {description}",
+    "For your perfect {vibe} experience, {name} in {location} serves amazing {cuisine} dishes. {description}",
+    "Feeling like {vibe}? {name} in {location} is a fantastic {cuisine} restaurant that fits your style! {description}",
+    "{name} is a {cuisine} gem in {location} that matches your {vibe} vibe perfectly. {description}"
+]
+
+@router.post("/advise", response_model=AdviseResponse)
+async def get_recommendation(request: AdviseRequest):
     try:
+        preferences = request.dict()
         vibe = preferences.get("vibe") or "romantic"
-        ambience = preferences.get("ambience")
+        cuisine = preferences.get("cuisines", ["italian"])[0].lower()
         location = preferences.get("location") or "NYC"
-        cuisine = preferences.get("cuisines", ["Fine Dining"])[0] if preferences.get("cuisines") else "Fine Dining"
         budget = preferences.get("budget") or "$$"
-        dietary_restrictions = preferences.get("dietaryRestrictions", [])
-        absolute_nogos = preferences.get("absoluteNogos", [])
 
-        logger.info(f"Generating recommendations for {cuisine} cuisine with {vibe} vibe in {location}")
+        logger.info(f"Getting recommendation for cuisine={cuisine}, vibe={vibe}, location={location}")
 
-        # Check if API key and endpoint are available
-        if not AZURE_API_KEY or not AZURE_ENDPOINT:
-            logger.warning("Azure OpenAI configuration is incomplete. Missing API key or endpoint.")
-            return []
+        # Attempt to get recommendations from Azure OpenAI
+        restaurants = await generate_azure_openai_recommendation(preferences)
 
-        system_prompt = """
-            You are a recommendation engine for restaurants. 
-            Always output responses ONLY in strict JSON format without any additional text.
-            
-            IMPORTANT: Provide real, accurate information for restaurant addresses, phone numbers, and websites.
-            Do not use placeholder values like 'example.com' for websites or sample addresses.
-            If you don't know the exact information, it's better to omit these fields than to provide fake data.
+        if restaurants:
+            data = restaurants[0]
+            logger.info(f"Using AI recommendation: {data.get('name')}")
 
-            Example format:
-
-            {
-                "restaurants": [
-                    {
-                    "name": "Restaurant Name",
-                    "cuisine": "Cuisine Type",
-                    "priceRange": "$$",
-                    "location": "Neighborhood or City",
-                    "fullAddress": "123 Example St, Brooklyn, NY 11211",
-                    "phone": "(212) 555-1234",
-                    "rating": 4.7,
-                    "description": "Brief description of the restaurant.",
-                    "website": "https://example.com",
-                    "imageUrl": "https://example.com/image.jpg",
-                    "highlights": ["Great wine list", "Rooftop dining"],
-                    "menuItems": [
-                        {
-                        "name": "Dish Name",
-                        "description": "Dish description",
-                        "price": "$15",
-                        "category": "Main"
-                        }
-                    ]
-                    }
-                ]
-            }
-        """
-
-        user_prompt = f"""
-        Preferences:
-        - Vibe: {vibe}
-        - Ambience: {ambience or "Flexible"}
-        - Location: {location}
-        - Cuisine: {cuisine}
-        - Budget: {budget}
-        - Party Size: {preferences.get("partySize", "2")}
-        - Dietary Restrictions: {', '.join(dietary_restrictions) if dietary_restrictions else "None"}
-        - No-go Items: {', '.join(absolute_nogos) if absolute_nogos else "None"}
-
-        Please provide recommendations for real restaurants that match these preferences.
-        
-        IMPORTANT: For each restaurant, please include:
-        - Real, accurate full address (fullAddress field)
-        - Actual website URL (not example.com)
-        - Real phone number if known
-        
-        If you don't know the exact information for any of these fields, omit them rather than providing placeholder data.
-        
-        For each restaurant, return the following:
-        - Restaurant Name
-        - Cuisine
-        - Price Range
-        - Location (Neighborhood or City)
-        - fullAddress
-        - phone number
-        - Rating
-        - Short Description
-        - Website URL (if possible)
-        - Image URL (if possible)
-        - 2-3 Highlights
-        - 3-5 Popular Menu Items (with name, description, price, and category)
-
-        Respond ONLY as a valid JSON array called "restaurants".
-        """
-
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.post(
-                f"{AZURE_ENDPOINT}/openai/deployments/{AZURE_DEPLOYMENT_NAME}/chat/completions?api-version=2023-05-15",
-                headers={
-                    "Content-Type": "application/json",
-                    "api-key": AZURE_API_KEY
+            menu_items = data.get("menuItems", [
+                {
+                    "name": f"{cuisine.capitalize()} Special",
+                    "description": f"Chef's special {cuisine} dish",
+                    "price": "$" + str(random.randint(15, 30)),
+                    "category": "Main"
                 },
-                json={
-                    "messages": [
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": user_prompt}
-                    ],
-                    "temperature": 0.7,
-                    "max_tokens": 1200,
-                    "response_format": {"type": "json_object"}
+                {
+                    "name": f"Traditional {cuisine.capitalize()} Appetizer",
+                    "description": f"Classic {cuisine} starter",
+                    "price": "$" + str(random.randint(8, 15)),
+                    "category": "Appetizer"
                 }
+            ])
+
+            cuisine_keyword = cuisine.replace(' ', '+')
+            default_image_url = f"https://source.unsplash.com/featured/?{cuisine_keyword},restaurant"
+
+            restaurant = Restaurant(
+                id=f"ai-{random.randint(1000, 9999)}",
+                name=data["name"],
+                cuisineType=data.get("cuisine", cuisine.capitalize()),
+                priceRange=data.get("priceRange", budget),
+                location=data.get("location", location),
+                rating=data.get("rating", 4.5),
+                description=data.get("description", "A delightful spot for your meal."),
+                address=data.get("fullAddress", f"{random.randint(1,999)} Main St, {location}"),
+                phone=data.get("phone", f"[Sample] ({random.randint(200,999)}) {random.randint(100,999)}-{random.randint(1000,9999)}"),
+                website=data.get("website", f"https://www.{data['name'].lower().replace(' ', '').replace("'", '')}.com"),
+                imageUrl=data.get("imageUrl", default_image_url),
+                openingHours=data.get("openingHours", ["11:00 AM - 10:00 PM"] * 7),
+                highlights=data.get("highlights", [cuisine.capitalize(), vibe.capitalize(), location]),
+                reasonsToRecommend=[
+                    f"Perfect for a {vibe} experience",
+                    f"Authentic {cuisine} cuisine",
+                    f"Matches your {budget} budget"
+                ],
+                menuItems=menu_items
             )
 
-        if response.status_code == 200:
-            content = response.json()["choices"][0]["message"]["content"]
-            logger.info(f"OpenAI response: {content[:200]}...")  # Log first 200 chars of response
-            result = json.loads(content)
-            return result.get("restaurants", [])
+            response_text = random.choice(description_templates).format(
+                vibe=vibe.lower(),
+                cuisine=cuisine.lower(),
+                location=location,
+                name=restaurant.name,
+                description=restaurant.description
+            )
+            return AdviseResponse(response=response_text, restaurant=restaurant)
 
-        logger.error(f"Azure API error {response.status_code}: {response.text}")
-        return []
+        # Fallback to static sample
+        fallback_data = random.choice(RESTAURANT_DATA.get(cuisine, RESTAURANT_DATA["italian"]))
+        logger.warning("Using fallback data.")
+
+        cuisine_keyword = cuisine.replace(' ', '+')
+        image_url = f"https://source.unsplash.com/featured/?{cuisine_keyword},restaurant"
+        website_name = fallback_data['name'].lower().replace(' ', '').replace("'", '')
+        website_url = f"https://www.{website_name}.com"
+
+        restaurant = Restaurant(
+            id=f"static-{random.randint(1000, 9999)}",
+            name=fallback_data["name"],
+            cuisineType=cuisine.capitalize(),
+            priceRange=fallback_data.get("priceRange", "$$"),
+            location=location,
+            rating=fallback_data.get("rating", 4.5),
+            description=fallback_data["description"],
+            address=f"{random.randint(1,999)} Park Ave, {location}",
+            phone=f"[Sample] ({random.randint(200,999)}) {random.randint(100,999)}-{random.randint(1000,9999)}",
+            website=website_url,
+            imageUrl=image_url,
+            openingHours=["11:00 AM - 10:00 PM"] * 7,
+            highlights=["Locally loved", "Charming setting", "Great food"],
+            reasonsToRecommend=[
+                f"Perfect for a {vibe} experience",
+                f"Classic {cuisine} dishes",
+                f"Great ambiance and value"
+            ],
+            menuItems=[]
+        )
+
+        response_text = f"Based on your vibe for {vibe}, you might enjoy {restaurant.name} in {location}."
+        return AdviseResponse(response=response_text, restaurant=restaurant)
 
     except Exception as e:
-        logger.exception("Error generating OpenAI recommendations")
-        return []
+        logger.exception("Error generating recommendation")
+        raise HTTPException(status_code=500, detail="Internal server error")
