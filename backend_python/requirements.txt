@@ -6,4 +6,4 @@ pydantic==1.10.12
 httpx==0.25.0
 gunicorn==21.2.0
 openai>=1.0.0
-azure-openai>=1.0.0
+azure-ai-openai>=1.0.0
