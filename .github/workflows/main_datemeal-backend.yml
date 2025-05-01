@@ -43,6 +43,18 @@ jobs:
           tenant-id: f81596cd-c622-488d-bb28-77b019541f23
           subscription-id: 6122595f-c233-4053-872e-9ee01d92a207
 
+      - name: Stop Web App
+        run: |
+          az webapp stop \
+            --name datemeal-backend \
+            --resource-group rg-mxcao_alina-3429_ai
+
+      - name: Clean up existing deployments
+        run: |
+          az webapp deployment source delete \
+            --name datemeal-backend \
+            --resource-group rg-mxcao_alina-3429_ai
+
       - name: Configure Azure Web App
         run: |
           # Set startup command
@@ -75,3 +87,9 @@ jobs:
           package: release.zip
           slot-name: production
         timeout-minutes: 7  # Add timeout for deployment step
+
+      - name: Start Web App
+        run: |
+          az webapp start \
+            --name datemeal-backend \
+            --resource-group rg-mxcao_alina-3429_ai
