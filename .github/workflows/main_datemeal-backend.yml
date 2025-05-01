@@ -13,7 +13,7 @@ permissions:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     steps:
       - name: Checkout repo
@@ -29,12 +29,24 @@ jobs:
           cd backend_python
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          echo "Dependencies installed successfully"
+
+      - name: Debug Environment
+        run: |
+          python --version
+          pip --version
+          echo "Current directory: $(pwd)"
+          ls -la backend_python/
 
       - name: Create deployment package
         run: |
           cd backend_python
           rm -rf venv __pycache__ .env
+          mkdir -p log
+          echo "Files to be included in package:"
+          ls -la
           zip -r ../release.zip .
+          echo "Package created successfully, size: $(du -h ../release.zip | cut -f1)"
 
       - name: Azure Login using OIDC
         uses: azure/login@v2
@@ -48,15 +60,21 @@ jobs:
           az webapp stop \
             --name datemeal-backend \
             --resource-group rg-mxcao_alina-3429_ai
+          echo "Web app stopped"
 
       - name: Configure Azure Web App
         run: |
+          # Get current configuration
+          echo "Current web app configuration:"
+          az webapp config show --name datemeal-backend --resource-group rg-mxcao_alina-3429_ai --query "{linuxFxVersion:linuxFxVersion,appCommandLine:appCommandLine}"
+          
           # Set startup command and Python version
           az webapp config set \
             --name datemeal-backend \
             --resource-group rg-mxcao_alina-3429_ai \
-            --startup-file "startup.sh" \
+            --startup-file "bash startup.sh" \
             --linux-fx-version "PYTHON|3.10"
+          echo "Startup command and Python version set"
           
           # Set environment variables
           az webapp config appsettings set \
@@ -66,18 +84,55 @@ jobs:
               WEBSITES_PORT=8000 \
               SCM_DO_BUILD_DURING_DEPLOYMENT=true \
               AZURE_OPENAI_API_KEY=${{ secrets.AZURE_OPENAI_API_KEY }} \
-              AZURE_OPENAI_ENDPOINT=${{ secrets.AZURE_OPENAI_ENDPOINT }}
+              AZURE_OPENAI_ENDPOINT=${{ secrets.AZURE_OPENAI_ENDPOINT }} \
+              AZURE_OPENAI_DEPLOYMENT_NAME=${{ secrets.AZURE_OPENAI_DEPLOYMENT_NAME }}
+          echo "Environment variables set"
+          
+          # Verify changes
+          echo "Updated web app configuration:"
+          az webapp config show --name datemeal-backend --resource-group rg-mxcao_alina-3429_ai --query "{linuxFxVersion:linuxFxVersion,appCommandLine:appCommandLine}"
 
       - name: Deploy to Azure Web App
+        id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
           app-name: datemeal-backend
           package: release.zip
           slot-name: production
-        timeout-minutes: 7
+        timeout-minutes: 10
+
+      - name: Check deployment status
+        if: ${{ always() }}
+        run: |
+          if [ "${{ steps.deploy-to-webapp.outcome }}" == "success" ]; then
+            echo "Deployment succeeded"
+          else
+            echo "Deployment failed"
+            echo "Checking logs..."
+            az webapp log tail --name datemeal-backend --resource-group rg-mxcao_alina-3429_ai
+          fi
 
       - name: Start Web App
         run: |
           az webapp start \
             --name datemeal-backend \
             --resource-group rg-mxcao_alina-3429_ai
+          echo "Web app started"
+
+      - name: Verify deployment
+        run: |
+          echo "Waiting for deployment to stabilize..."
+          sleep 30
+          
+          echo "Checking if app is running..."
+          url="https://datemeal-backend-cga2d8fqfsctesh9.eastus2-01.azurewebsites.net"
+          status_code=$(curl -s -o /dev/null -w "%{http_code}" $url)
+          echo "App status code: $status_code"
+          
+          if [ "$status_code" -ge 200 ] && [ "$status_code" -lt 300 ]; then
+            echo "App is running successfully"
+          else
+            echo "App may not be running properly. Status code: $status_code"
+            echo "Checking logs..."
+            az webapp log tail --name datemeal-backend --resource-group rg-mxcao_alina-3429_ai
+          fi

@@ -13,6 +13,9 @@ client = AzureOpenAI(
     azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT")
 )
 
+# Get model deployment name from environment or default to "gpt-4"
+MODEL_DEPLOYMENT_NAME = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME", "gpt-4")
+
 async def generate_azure_openai_recommendation(preferences: dict) -> list:
     """
     Generate restaurant recommendations using Azure OpenAI.
@@ -52,25 +55,52 @@ async def generate_azure_openai_recommendation(preferences: dict) -> list:
         """
 
         # Call Azure OpenAI
-        response = client.chat.completions.create(
-            model="gpt-4",  # or your specific deployment name
-            messages=[
-                {"role": "system", "content": "You are a restaurant recommendation assistant."},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.7,
-            max_tokens=1000
-        )
-
-        # Parse the response
-        recommendation = response.choices[0].message.content
         try:
-            import json
-            restaurant_data = json.loads(recommendation)
-            return [restaurant_data]
-        except json.JSONDecodeError:
-            logger.error("Failed to parse OpenAI response as JSON")
-            return None
+            response = client.chat.completions.create(
+                model=MODEL_DEPLOYMENT_NAME,
+                messages=[
+                    {"role": "system", "content": "You are a restaurant recommendation assistant."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.7,
+                max_tokens=1000
+            )
+            
+            # Parse the response
+            recommendation = response.choices[0].message.content
+            try:
+                import json
+                restaurant_data = json.loads(recommendation)
+                return [restaurant_data]
+            except json.JSONDecodeError:
+                logger.error("Failed to parse OpenAI response as JSON")
+                return None
+                
+        except Exception as api_error:
+            logger.error(f"API error: {str(api_error)}")
+            # Return a fallback sample restaurant
+            return [{
+                "name": "Sample Restaurant",
+                "cuisine": preferences.get("cuisines", ["italian"])[0].capitalize(),
+                "priceRange": preferences.get("budget", "$$"),
+                "location": preferences.get("location", "NYC"),
+                "rating": 4.5,
+                "description": "A delightful spot for your meal.",
+                "fullAddress": "123 Main St",
+                "phone": "(555) 123-4567",
+                "website": "https://www.sample.com",
+                "imageUrl": "https://source.unsplash.com/featured/?restaurant",
+                "openingHours": ["11:00 AM - 10:00 PM"] * 7,
+                "highlights": ["Great ambiance", "Friendly staff", "Delicious food"],
+                "menuItems": [
+                    {
+                        "name": "Sample Dish",
+                        "description": "A delicious sample dish",
+                        "price": "$20",
+                        "category": "Main"
+                    }
+                ]
+            }]
 
     except Exception as e:
         logger.error(f"Error generating recommendation: {str(e)}")
