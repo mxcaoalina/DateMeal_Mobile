@@ -1,6 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from api import advise, health, refine
+from fastapi.staticfiles import StaticFiles
+import os
+from api import advise, health, refine, images
 from utils.logger import setup_logger
 
 app = FastAPI()
@@ -15,6 +17,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Create static directory if it doesn't exist
+os.makedirs("static/images", exist_ok=True)
+
+# Mount static files directory
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
 @app.get("/")
 async def root():
     return {"message": "Backend is running"}
@@ -22,6 +30,7 @@ async def root():
 app.include_router(advise.router)
 app.include_router(health.router)
 app.include_router(refine.router)
+app.include_router(images.router)
 
 if __name__ == "__main__":
     import uvicorn

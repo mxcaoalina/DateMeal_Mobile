@@ -3,6 +3,7 @@ from models.schemas import AdviseRequest, AdviseResponse, Restaurant
 from services.openai_service import generate_azure_openai_recommendation
 # from services.bing_service import search_bing_for_restaurant, BING_API_KEY
 from services.restaurant_data import RESTAURANT_DATA
+from utils.imageUtils import ImageUtils
 import random
 import logging
 
@@ -109,6 +110,25 @@ async def get_recommendation(request: AdviseRequest):
                 description=restaurant_data.get('description', '')
             )
 
+            # Get a reliable image URL and try to convert to base64 if needed
+            image_url = restaurant_data.get('imageUrl', '')
+            if not image_url:
+                cuisine_keyword = cuisine.replace(' ', '+')
+                image_url = f"https://source.unsplash.com/featured/?{cuisine_keyword},restaurant"
+                
+            # Ensure the image URL is accessible
+            try:
+                # Try to validate the image URL is working
+                if not ImageUtils.download_image(image_url):
+                    # Fallback to Unsplash if the provided URL doesn't work
+                    logger.warning(f"Image URL {image_url} is not accessible, using fallback")
+                    cuisine_keyword = cuisine.replace(' ', '+')
+                    image_url = f"https://source.unsplash.com/featured/?{cuisine_keyword},restaurant"
+            except Exception as img_err:
+                logger.warning(f"Error processing image URL: {img_err}")
+                cuisine_keyword = cuisine.replace(' ', '+')
+                image_url = f"https://source.unsplash.com/featured/?{cuisine_keyword},restaurant"
+
             restaurant = Restaurant(
                 id=f"ai-{random.randint(1000, 9999)}",
                 name=restaurant_data.get('name', 'Sample Restaurant'),
@@ -121,7 +141,7 @@ async def get_recommendation(request: AdviseRequest):
                 phone=restaurant_data.get('phone', f"[Sample] ({random.randint(200,999)}) {random.randint(100,999)}-{random.randint(1000,9999)}"),
                 clean_name=restaurant_data.get('name', 'samplerestaurant').lower().replace(' ', '').replace("'", ''),
                 website=get_website_url(restaurant_data),
-                imageUrl=restaurant_data.get('imageUrl', f"https://source.unsplash.com/featured/?{cuisine},restaurant"),
+                imageUrl=image_url,
                 openingHours=restaurant_data.get('openingHours', ["11:00 AM - 10:00 PM"] * 7),
                 highlights=restaurant_data.get('highlights', [cuisine.capitalize(), vibe.capitalize(), location]),
                 reasonsToRecommend=[
@@ -141,6 +161,15 @@ async def get_recommendation(request: AdviseRequest):
         cuisine_keyword = cuisine.replace(' ', '+')
         image_url = f"https://source.unsplash.com/featured/?{cuisine_keyword},restaurant"
         
+        # Ensure the image URL works
+        try:
+            if not ImageUtils.download_image(image_url):
+                logger.warning(f"Fallback image URL {image_url} is not accessible, using generic fallback")
+                image_url = "https://source.unsplash.com/featured/?restaurant"
+        except Exception as img_err:
+            logger.warning(f"Error processing fallback image URL: {img_err}")
+            image_url = "https://source.unsplash.com/featured/?restaurant"
+            
         restaurant = Restaurant(
             id=f"static-{random.randint(1000, 9999)}",
             name=fallback_data["name"],
